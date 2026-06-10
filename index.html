@@ -3,10 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PhytoLab — Simulador Interativo de Fotossíntese</title>
+<title>SimFoto — Simulador Interativo de Fotossíntese</title>
 <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-
+/* =====================================================================
+   VARIÁVEIS DE DESIGN — SISTEMA DE COR CIENTÍFICA
+   ===================================================================== */
 :root {
   --bg:          #060e1c;
   --bg2:         #0b1a2e;
@@ -243,25 +245,7 @@ aside {
 .m-atp { color: var(--atp); } .m-nadph{ color: var(--nadph); }
 .m-luz { color: var(--luz); }
 
-.concepcao {
-  background: rgba(255,112,67,.07); border: 1px solid rgba(255,112,67,.2);
-  border-radius: var(--r); padding: 9px; font-size: 10.5px;
-  transition: all .4s; line-height: 1.4;
-}
-.concepcao.ok {
-  background: rgba(102,187,106,.07); border-color: rgba(102,187,106,.25);
-}
-.concepcao.ativa {
-  background: rgba(255,112,67,.15); border-color: var(--alerta);
-  box-shadow: 0 0 10px rgba(255,112,67,.2);
-}
-.c-ico {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 15px; height: 15px; border-radius: 50%;
-  font-size: 9px; font-weight: 800; margin-right: 5px;
-  background: rgba(255,112,67,.25); color: var(--alerta);
-}
-.concepcao.ok .c-ico { background: rgba(102,187,106,.25); color: var(--ok); }
+
 
 .minigrafico { width: 100%; height: 56px; display: block; margin-top: 4px; }
 
@@ -286,18 +270,7 @@ footer {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--borda); border-radius: 2px; }
 
-/* Alerta popup */
-#alerta-popup {
-  position: absolute; top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  background: rgba(255,112,67,.96); border-radius: var(--rg);
-  padding: 18px 22px; font-size: 12.5px; font-weight: 600;
-  z-index: 200; max-width: 300px; text-align: center;
-  line-height: 1.5; color: white; display: none;
-  box-shadow: 0 8px 30px rgba(255,112,67,.4);
-  pointer-events: none;
-}
-#alerta-popup.vis { display:block; animation: fadeIn .3s ease; }
+
 
 /* Botão "Próximo nível" zoom */
 .btn-zoom {
@@ -313,17 +286,7 @@ footer {
 }
 .bzoom:hover { border-color: var(--desteq); color: var(--desteq); }
 
-/* Info sobre concepção abaixo da visualização */
-#info-concepcao {
-  position: absolute; top: 14px; right: 14px; z-index: 10;
-  max-width: 220px; background: rgba(11,26,46,.95);
-  border: 1px solid var(--borda2); border-radius: var(--r);
-  padding: 9px 10px; font-size: 10.5px; line-height: 1.4;
-  backdrop-filter: blur(4px); display: none;
-}
-#info-concepcao.vis { display: block; }
-#info-concepcao .ic-tit { color: var(--alerta); font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-#info-concepcao .ic-corr { color: var(--ok); font-weight: 700; margin-top: 6px; font-size: 10px; }
+
 </style>
 </head>
 <body>
@@ -331,7 +294,7 @@ footer {
 <!-- ═══════════════════════════════════════════════ HEADER ═══ -->
 <header>
   <div class="logo-wrap">
-    <div class="logo">PhytoLab</div>
+    <div class="logo">SimFoto</div>
     <div class="logo-sub">Simulador de Fotossíntese</div>
   </div>
 
@@ -448,12 +411,7 @@ footer {
     <button class="bzoom" onclick="U.zoomOut()" title="Afastar nível">－</button>
   </div>
 
-  <div id="alerta-popup"></div>
-  <div id="info-concepcao">
-    <div class="ic-tit" id="ic-tit"></div>
-    <div id="ic-txt"></div>
-    <div class="ic-corr" id="ic-corr"></div>
-  </div>
+
 </main>
 
 <!-- ═══════════════════════════════════════════ PAINEL DADOS ═══ -->
@@ -513,8 +471,6 @@ footer {
     <canvas class="minigrafico" id="mini-graf"></canvas>
   </div>
 
-  <div class="sec-titulo">Concepções Corrigidas</div>
-  <div id="lista-concepcoes" style="display:flex;flex-direction:column;gap:5px"></div>
 
 </aside>
 
@@ -527,19 +483,14 @@ footer {
     <span>Temperatura ótima: <b>25°C</b></span>
   </div>
   <div class="st-item">
-    <span>PhytoLab v1.0 — Inspirado no PhET (UCB)</span>
+    <span>SimFoto v1.0 — Inspirado no PhET (UCB)</span>
   </div>
 </footer>
 
-<!-- ═══════════════════════════════════════════════════════════
-     SCRIPT PRINCIPAL
-     ═══════════════════════════════════════════════════════════ -->
 <script>
 'use strict';
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  ESTADO GLOBAL DA SIMULAÇÃO                                  ║
-// ╚══════════════════════════════════════════════════════════════╝
+
 const E = {
   // Variáveis controladas pelo usuário
   luz:     75,   // 0–100 %
@@ -579,14 +530,8 @@ const E = {
 
   // Experimentos ativos
   expAtivo: null,
-
-  // Concepções corrigidas nesta sessão
-  corrigidas: new Set(),
 };
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  MOTOR DE SIMULAÇÃO CIENTÍFICA                               ║
-// ╚══════════════════════════════════════════════════════════════╝
 const Motor = {
   // Fotossíntese: modelo Farquhar simplificado
   calcPS() {
@@ -654,13 +599,9 @@ const Motor = {
     if (E.hPS.length > 60) { E.hPS.shift(); E.hResp.shift(); }
 
     E.tick++;
-    Concepcoes.verificar();
   }
 };
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  SISTEMA DE PARTÍCULAS                                       ║
-// ╚══════════════════════════════════════════════════════════════╝
 class Particula {
   constructor(x, y, vx, vy, r, cor, vida, label='') {
     this.x=x; this.y=y; this.vx=vx; this.vy=vy;
@@ -702,9 +643,6 @@ class SistemaParticulas {
 
 const SP = new SistemaParticulas();
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  UTILITÁRIOS DE DESENHO                                      ║
-// ╚══════════════════════════════════════════════════════════════╝
 const D = {
   // Gradiente vertical num retângulo
   gradV(ctx, x,y,w,h, c1, c2) {
@@ -775,9 +713,6 @@ const D = {
   },
 };
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  NIVEL 0 — AMBIENTE / ECOSSISTEMA                            ║
-// ╚══════════════════════════════════════════════════════════════╝
 const NivelAmbiente = {
   spawnTimer: 0,
 
@@ -1018,9 +953,7 @@ const NivelAmbiente = {
   }
 };
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  NIVEL 1 — PLANTA INTEIRA                                    ║
-// ╚══════════════════════════════════════════════════════════════╝
+
 const NivelPlanta = {
   render(ctx, W, H, t) {
     // Fundo
@@ -1213,648 +1146,737 @@ const NivelPlanta = {
   }
 };
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  NIVEL 2 — ÓRGÃO: FOLHA (CORTE TRANSVERSAL)                 ║
-// ╚══════════════════════════════════════════════════════════════╝
 const NivelFolha = {
   render(ctx, W, H, t) {
-    D.gradV(ctx, 0,0,W,H,'#060e1c','#0a1628');
+    ctx.fillStyle = '#060f1e'; ctx.fillRect(0,0,W,H);
+    const luzN = E.luz/100;
+    const sunCor = {branca:'#ffd740',azul:'#4fc3f7',vermelho:'#ff7043',verde:'#66bb6a'}[E.espectro]||'#ffd740';
 
-    const cx=W/2, cy=H/2;
-    const lW=W*0.82, lH=H*0.6;
-    const lX=cx-lW/2, lY=cy-lH/2;
+    // ── Geometria principal ──────────────────────────────────────
+    const LBL_W = W * 0.17;   // coluna de rótulos (esquerda)
+    const CS_X  = LBL_W + 10; // início do corte
+    const CS_W  = W * 0.44;   // largura do corte
+    const FP_X  = CS_X + CS_W + 20; // painel de fluxos
+    const FP_W  = W - FP_X - 12;
+    const CS_Y  = 32;
+    const STAT_H= 30;
+    const CS_H  = H - CS_Y - STAT_H - 14;
 
-    // Camadas da folha
-    const camadas = [
-      { label:'Cutícula', h:0.07, cor1:'#e6ee9c', cor2:'#dce775', txt:'#1b5e20', desc:'Impermeável à água' },
-      { label:'Epiderme Superior', h:0.10, cor1:'#c8e6c9', cor2:'#a5d6a7', txt:'#1b5e20', desc:'Sem cloroplastos' },
-      { label:'Mesófilo Paliçádico', h:0.25, cor1:'#2e7d32', cor2:'#388e3c', txt:'#a5d6a7', desc:'Ricos em cloroplastos' },
-      { label:'Mesófilo Lacunoso', h:0.25, cor1:'#1b5e20', cor2:'#256027', txt:'#c8e6c9', desc:'Espaços para CO₂' },
-      { label:'Epiderme Inferior', h:0.10, cor1:'#c8e6c9', cor2:'#a5d6a7', txt:'#1b5e20', desc:'Com estômatos' },
-      { label:'Cutícula Inferior', h:0.07, cor1:'#e6ee9c', cor2:'#dce775', txt:'#1b5e20', desc:'' },
+    // ── Título ──────────────────────────────────────────────────
+    ctx.fillStyle='#b0c4dc'; ctx.font='bold 12px var(--fonte)';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('CORTE TRANSVERSAL DA FOLHA', CS_X + CS_W/2, 16);
+
+    // ── Camadas ──────────────────────────────────────────────────
+    const LAYERS = [
+      {label:'Cutícula Superior',  note:'impermeável',          pct:.07, fill:'#f0f4c3', tc:'#558b2f'},
+      {label:'Epiderme Superior',  note:'sem cloroplastos',     pct:.09, fill:'#c5e1a5', tc:'#2e7d32'},
+      {label:'Mesófilo Paliçádico',note:'rico em cloroplastos', pct:.28, fill:'#2e7d32', tc:'#c8e6c9'},
+      {label:'Mesófilo Lacunoso',  note:'espaços aéreos + CO₂', pct:.27, fill:'#195c1d', tc:'#a5d6a7'},
+      {label:'Epiderme Inferior',  note:'estômatos aqui',       pct:.09, fill:'#c5e1a5', tc:'#2e7d32'},
+      {label:'Cutícula Inferior',  note:'impermeável',          pct:.07, fill:'#f0f4c3', tc:'#558b2f'},
     ];
+    const totP = LAYERS.reduce((s,l)=>s+l.pct,0);
+    let yy = CS_Y;
+    const LB = LAYERS.map(l=>{ const h=CS_H*l.pct/totP, y=yy; yy+=h; return {y,h}; });
 
-    let yCur = lY;
-    const camadaH = camadas.map(c => lH * c.h);
-    camadas.forEach((c, i) => {
-      const ch = camadaH[i];
-      const g = ctx.createLinearGradient(lX, yCur, lX+lW, yCur+ch);
-      g.addColorStop(0, c.cor1); g.addColorStop(1, c.cor2);
-      ctx.fillStyle=g;
-      ctx.fillRect(lX, yCur, lW, ch);
-      ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.5;
-      ctx.strokeRect(lX, yCur, lW, ch);
+    // Desenhar camadas
+    LAYERS.forEach((l,i)=>{
+      const {y,h} = LB[i];
+      ctx.fillStyle = l.fill; ctx.fillRect(CS_X,y,CS_W,h);
+      // Variação de cor no mesófilo
+      if(i===2){ const g=ctx.createLinearGradient(CS_X,y,CS_X+CS_W,y); g.addColorStop(0,'#235a26'); g.addColorStop(.5,l.fill); g.addColorStop(1,'#235a26'); ctx.fillStyle=g; ctx.fillRect(CS_X,y,CS_W,h); }
+      if(i===3){ const g=ctx.createLinearGradient(CS_X,y,CS_X,y+h); g.addColorStop(0,'#154e18'); g.addColorStop(1,l.fill); ctx.fillStyle=g; ctx.fillRect(CS_X,y,CS_W,h); }
+      ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=0.5; ctx.strokeRect(CS_X,y,CS_W,h);
+    });
+    ctx.strokeStyle='#4caf5044'; ctx.lineWidth=1.5; ctx.strokeRect(CS_X,CS_Y,CS_W,CS_H);
 
-      // Rótulo
-      ctx.fillStyle=c.txt; ctx.font='bold 10px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle';
-      ctx.fillText(c.label + (c.desc ? ' — '+c.desc : ''), lX+8, yCur+ch/2);
-
-      yCur += ch;
+    // ── Rótulos (coluna esquerda, com linhas de chamada) ─────────
+    LAYERS.forEach((l,i)=>{
+      const {y,h} = LB[i]; const midY = y+h/2;
+      ctx.strokeStyle=l.fill+'77'; ctx.lineWidth=0.8;
+      ctx.beginPath(); ctx.moveTo(CS_X,midY); ctx.lineTo(CS_X-8,midY); ctx.stroke();
+      const sz = h>26 ? 10 : 9;
+      ctx.font=`bold ${sz}px var(--fonte)`; ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillStyle='#c8dce8'; ctx.fillText(l.label, CS_X-12, midY-(h>24?6:0));
+      if(h>20){ ctx.font='8px var(--fonte)'; ctx.fillStyle=l.fill+'bb'; ctx.fillText(l.note, CS_X-12, midY+7); }
     });
 
-    // Xilema e Floema (nervura central)
-    const nerv_x = cx - 10;
-    const nerv_y = lY + lH*0.35;
-    const nerv_h = lH*0.35;
-    ctx.fillStyle='#1a237e'; ctx.fillRect(nerv_x-8, nerv_y, 8, nerv_h);
-    ctx.fillStyle='#f57f17'; ctx.fillRect(nerv_x,   nerv_y, 8, nerv_h);
-    D.texto(ctx,'Xilema',nerv_x-4,nerv_y-8,'#4fc3f7',8,true);
-    D.texto(ctx,'Floema',nerv_x+4,nerv_y-8,'#ffb300',8,true);
-
-    // Cloroplastos no mesófilo paliçádico
-    const yMesoP = lY + lH*(0.07+0.10);
-    const hMesoP = lH*0.25;
-    const nCloro = Math.floor(12 + (E.taxaPS/100)*8);
-    for (let i=0; i<nCloro; i++) {
-      const cx2 = lX + 30 + Math.random()*(lW-60);  // static via seed
-      const seed = i * 137.508;
-      const cloroX = lX + 25 + (seed*17 % (lW-50));
-      const cloroY = yMesoP + 6 + (seed*31 % (hMesoP-12));
-      const glow = E.taxaPS/100;
-      D.circBorda(ctx, cloroX, cloroY, 7, `hsl(120,${40+glow*35}%,${20+glow*20}%)`, '#4caf50', 1);
+    // ── Cloroplastos no Paliçádico (grade ordenada) ──────────────
+    const mpB = LB[2], mlB = LB[3];
+    const psGlow = Math.max(0.2,E.taxaPS/100);
+    for(let r=0;r<2;r++) for(let c=0;c<8;c++){
+      const px = CS_X + CS_W*(0.05+c*0.115) + (r?CS_W*0.06:0);
+      const py = mpB.y + mpB.h*(0.2+r*0.52);
+      const pulse = E.luz>5 ? 0.7+0.3*Math.sin(t*1.6+c+r*4) : 0.22;
+      ctx.save(); ctx.translate(px,py);
+      const eg=ctx.createRadialGradient(0,-1,1,0,0,7);
+      eg.addColorStop(0,`rgba(140,210,140,${pulse})`); eg.addColorStop(1,`rgba(40,110,45,${pulse*.5})`);
+      ctx.beginPath(); ctx.ellipse(0,0,7,5,0,0,Math.PI*2); ctx.fillStyle=eg; ctx.fill();
+      if(E.luz>25){ ctx.strokeStyle=`rgba(255,213,79,${Math.max(0,pulse-.5)*.5})`; ctx.lineWidth=0.6; ctx.stroke(); }
+      ctx.restore();
+    }
+    // Cloroplastos esparsos no Lacunoso
+    for(let i=0;i<11;i++){
+      const s=i*131.1; const px=CS_X+10+(s*23%(CS_W-20)); const py=mlB.y+8+(s*41%(mlB.h-16));
+      ctx.beginPath(); ctx.ellipse(px,py,5,4,s,0,Math.PI*2);
+      ctx.fillStyle=`rgba(67,160,71,${.35+psGlow*.25})`; ctx.fill();
+    }
+    // Espaços de ar no Lacunoso
+    for(let i=0;i<8;i++){
+      const s=i*89.3+55; const px=CS_X+12+(s*29%(CS_W-24)); const py=mlB.y+8+(s*53%(mlB.h-16));
+      ctx.beginPath(); ctx.ellipse(px,py,10,6,s*.3,0,Math.PI*2);
+      ctx.fillStyle='rgba(6,14,28,.5)'; ctx.fill();
+      ctx.strokeStyle='rgba(128,203,196,.06)'; ctx.lineWidth=.5; ctx.stroke();
     }
 
-    // Cloroplastos no mesófilo lacunoso
-    const yMesoL = lY + lH*(0.07+0.10+0.25);
-    const hMesoL = lH*0.25;
-    for (let i=0; i<Math.floor(nCloro*0.7); i++) {
-      const seed = i * 97.3 + 500;
-      const cloroX = lX + 25 + (seed*23 % (lW-50));
-      const cloroY = yMesoL + 6 + (seed*41 % (hMesoL-12));
-      D.circBorda(ctx, cloroX, cloroY, 6, '#2e7d32', '#66bb6a80', 0.8);
+    // ── Feixe Vascular (nervura) ─────────────────────────────────
+    const vbX=CS_X+CS_W*.72, vbY=mpB.y, vbH=mpB.h+mlB.h, vbW=15;
+    ctx.fillStyle='#0d47a1bb'; ctx.fillRect(vbX,        vbY, vbW/2, vbH);
+    ctx.fillStyle='#e65100bb'; ctx.fillRect(vbX+vbW/2, vbY, vbW/2, vbH);
+    ctx.strokeStyle='#ffffff18'; ctx.lineWidth=.8; ctx.strokeRect(vbX,vbY,vbW,vbH);
+    // Xilema subindo, floema descendo
+    for(let i=0;i<3;i++){
+      const pr=(t*.6+i/3)%1;
+      if(E.raiz&&E.h2o>10) D.circ(ctx,vbX+vbW*.25,vbY+vbH-pr*vbH,2,'#4fc3f7',.8);
+      if(E.floema&&E.taxaPS>2) D.circ(ctx,vbX+vbW*.75,vbY+pr*vbH,2,'#ffb300',.8);
     }
+    D.label(ctx,'Xilema | Floema',vbX+vbW/2,vbY-11);
 
-    // Estômatos
-    const yEpInf = lY + lH*(1-0.10-0.07);
-    const stomAberto = E.stom;
-    const nStom = 5;
-    for (let i=0; i<nStom; i++) {
-      const sx = lX + lW*(0.1 + i*0.2);
-      const sy = yEpInf + lH*0.05;
-
-      // Células guarda
-      const opening = stomAberto ? 0.7 : 0.1;
+    // ── Estômatos na Epiderme Inferior ──────────────────────────
+    const epB=LB[4]; const stomY=epB.y+epB.h/2; const ap=E.stom?5.5:.55;
+    [.15,.34,.53,.73].forEach(f=>{
+      const sx=CS_X+CS_W*f;
       ctx.fillStyle='#558b2f';
-      // Célula guarda esq
-      ctx.beginPath(); ctx.ellipse(sx-5, sy, 5, 7, -0.3, 0, Math.PI*2); ctx.fill();
-      // Célula guarda dir
-      ctx.beginPath(); ctx.ellipse(sx+5, sy, 5, 7, 0.3, 0, Math.PI*2); ctx.fill();
-      // Poro
-      ctx.fillStyle = stomAberto ? 'rgba(200,240,255,0.4)' : 'rgba(50,80,50,0.6)';
-      ctx.beginPath(); ctx.ellipse(sx, sy, opening*4, 4, 0, 0, Math.PI*2); ctx.fill();
-    }
-
-    // Fluxos de moléculas
-    const fluxos = [
-      // CO₂ entrando pelos estômatos
-      ...(E.stom && E.co2>50 ? Array.from({length:3},(_,i)=> ({
-        x: lX + lW*(0.15+i*0.3), y0: lY+lH+20,
-        dy: -(1+Math.random()*0.5), cor: '#90a4ae', label:'CO₂'
-      })) : []),
-      // O₂ saindo
-      ...(E.taxaPS>5 ? Array.from({length:2},(_,i)=> ({
-        x: lX + lW*(0.25+i*0.4), y0: lY+lH+10,
-        dy: -(1.2), cor: '#80deea', label:'O₂', sai:true
-      })) : []),
-      // H₂O saindo (transpiração)
-      ...(E.stom && E.h2o>20 ? [{
-        x: lX + lW*0.55, y0: lY+lH+15, dy:-0.8, cor:'#4fc3f7', label:'H₂O', sai:true
-      }] : []),
-    ];
-
-    const numFluxo = Math.floor(t*40) % 60;
-    fluxos.forEach((f, fi) => {
-      const prog = (t*1.2 + fi*0.4) % 1;
-      const py = f.sai ? (lY+lH + lH*0.05) - prog*lH*0.15 : (lY+lH+20) - prog*lH*0.35;
-      D.circ(ctx, f.x, py, 3.5, f.cor, 0.7+Math.sin(t+fi)*0.2);
-      D.texto(ctx, f.label, f.x, py-8, f.cor, 8, true);
+      ctx.beginPath(); ctx.ellipse(sx-5,stomY,4.5,7,-.2,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(sx+5,stomY,4.5,7, .2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=E.stom?'rgba(100,215,255,.4)':'rgba(30,60,30,.9)';
+      ctx.beginPath(); ctx.ellipse(sx,stomY,ap,4,0,0,Math.PI*2); ctx.fill();
     });
 
-    // Luz entrando
-    if (E.luz > 0) {
-      const luzN = E.luz/100;
+    // ── Raios de luz entrando pelo topo ─────────────────────────
+    if(luzN>.05){
       ctx.save();
-      const sunCor = E.espectro === 'azul' ? '#4fc3f7' :
-                     E.espectro === 'vermelho' ? '#ff7043' :
-                     E.espectro === 'verde' ? '#66bb6a' : '#ffd740';
-      for (let i=0; i<5; i++) {
-        const rx = lX + lW*(0.1+i*0.2);
-        const g = ctx.createLinearGradient(rx,0,rx,lY+lH*0.35);
-        g.addColorStop(0, sunCor+'cc');
-        g.addColorStop(1, 'transparent');
-        ctx.fillStyle=g; ctx.globalAlpha=luzN*0.2;
-        ctx.fillRect(rx-3,0,6,lY+lH*0.35);
+      for(let i=0;i<5;i++){
+        const rx=CS_X+CS_W*(.1+i*.2);
+        const g=ctx.createLinearGradient(rx,0,rx,mpB.y+mpB.h*.7);
+        g.addColorStop(0,sunCor+Math.floor(luzN*90).toString(16).padStart(2,'0')); g.addColorStop(1,'transparent');
+        ctx.fillStyle=g; ctx.globalAlpha=luzN*.18; ctx.fillRect(rx-2.5,0,5,mpB.y+mpB.h*.7);
       }
       ctx.restore();
-      D.texto(ctx, '☀ Luz', lX+lW-30, lY-15, E.espectro==='azul'?'#4fc3f7':E.espectro==='vermelho'?'#ff7043':'#ffd740', 11, true);
+      ctx.font='bold 10px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillStyle=sunCor; ctx.fillText(`☀ ${E.luz}%`,CS_X+4,CS_Y-10);
     }
 
-    // Título
-    D.texto(ctx,'CORTE TRANSVERSAL DA FOLHA',cx,lY-24,'#dce8f5aa',11,true);
+    // Partículas CO₂ entrando pelos estômatos
+    if(E.stom&&E.co2>50) [.15,.34,.53].forEach((f,i)=>{
+      const pr=(t*.9+i/3)%1;
+      const px=CS_X+CS_W*f; const py=CS_Y+CS_H+4+(1-pr)*18;
+      if(py>epB.y){ D.circ(ctx,px,py,3.5,'#90a4ae',pr*.8); }
+    });
+    // O₂ saindo
+    if(E.taxaPS>5) [.28,.62].forEach((f,i)=>{
+      const pr=(t*.8+i*.5)%1; D.circ(ctx,CS_X+CS_W*f,CS_Y+CS_H+4+pr*20,3,'#80deea',(1-pr)*.7);
+    });
 
-    // Indicador de estômatos
-    ctx.fillStyle = E.stom ? 'rgba(102,187,106,.15)' : 'rgba(255,112,67,.15)';
-    ctx.strokeStyle = E.stom ? '#66bb6a' : '#ff7043';
-    ctx.lineWidth=1; ctx.beginPath();
-    ctx.roundRect(lX+lW-150, lY+lH+30, 148, 22, 6); ctx.fill(); ctx.stroke();
-    D.texto(ctx, E.stom ? '● Estômatos ABERTOS' : '○ Estômatos FECHADOS',
-            lX+lW-76, lY+lH+41, E.stom?'#66bb6a':'#ff7043', 10, true);
+    // ── Painel de Fluxos (coluna direita) ────────────────────────
+    ctx.fillStyle='rgba(11,26,46,.65)'; ctx.beginPath(); ctx.roundRect(FP_X,CS_Y-4,FP_W,CS_H+8,8); ctx.fill();
+    ctx.strokeStyle='#1a3557'; ctx.lineWidth=1; ctx.stroke();
+    ctx.font='bold 9px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#4db6ac'; ctx.fillText('ENTRADAS E SAÍDAS',FP_X+FP_W/2,CS_Y+10);
+
+    const FLOWS=[
+      {label:'LUZ',     sub:`${E.luz}% — espectro ${E.espectro}`, cor:sunCor,   active:luzN>0,         icon:'↓'},
+      {label:'CO₂',     sub:E.stom?`${E.co2} ppm entra`:'bloqueado (fechados)', cor:'#90a4ae', active:E.stom&&E.co2>0, icon:'→'},
+      {label:'H₂O',     sub:E.stom?`solo ${E.h2o}% — transpira`:'mínima',       cor:'#4fc3f7', active:E.h2o>10,        icon:'←'},
+      {label:'O₂',      sub:E.taxaPS>3?`PS=${E.taxaPS.toFixed(0)}% — libera`:'muito pouco',  cor:'#80deea', active:E.taxaPS>3,     icon:'←'},
+      {label:'Glicose', sub:'produzida → floema → planta',                       cor:'#ffb300', active:E.taxaPS>3,     icon:'↓'},
+    ];
+    const eH=(CS_H-22)/FLOWS.length;
+    FLOWS.forEach((fe,i)=>{
+      const ey=CS_Y+20+i*eH;
+      // Fundo da linha
+      ctx.fillStyle=fe.active?fe.cor+'11':'rgba(255,255,255,.02)';
+      ctx.beginPath(); ctx.roundRect(FP_X+8,ey,FP_W-16,eH-4,5); ctx.fill();
+      if(fe.active){ ctx.strokeStyle=fe.cor+'2a'; ctx.lineWidth=.8; ctx.beginPath(); ctx.roundRect(FP_X+8,ey,FP_W-16,eH-4,5); ctx.stroke(); }
+      // Ícone circular
+      ctx.beginPath(); ctx.arc(FP_X+22,ey+eH*.45,10,0,Math.PI*2);
+      ctx.fillStyle=fe.active?fe.cor+'cc':'#1a3557'; ctx.fill();
+      ctx.font='bold 10px var(--mono)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='#fff'; ctx.fillText(fe.icon,FP_X+22,ey+eH*.45);
+      // Texto
+      ctx.font=`bold ${Math.min(10,FP_W*.065)}px var(--fonte)`; ctx.textAlign='left'; ctx.textBaseline='top';
+      ctx.fillStyle=fe.active?fe.cor:'#3a5a7a'; ctx.fillText(fe.label,FP_X+38,ey+eH*.18);
+      ctx.font='9px var(--fonte)'; ctx.fillStyle=fe.active?'#7ea3bf':'#2a4060'; ctx.fillText(fe.sub,FP_X+38,ey+eH*.52);
+      // Partícula animada
+      if(fe.active){ const pr=(t*.65+i*.22)%1; D.circ(ctx,FP_X+38+FP_W*.38*pr,ey+eH-.9*eH*.3,2.5,fe.cor,.45+Math.sin(pr*Math.PI)*.4); }
+    });
+
+    // ── Barra de status ──────────────────────────────────────────
+    const SBY=H-STAT_H-4;
+    ctx.fillStyle='rgba(8,18,38,.95)'; ctx.beginPath(); ctx.roundRect(10,SBY,W-20,STAT_H,6); ctx.fill();
+    ctx.strokeStyle='#1a3557'; ctx.lineWidth=1; ctx.stroke();
+    const bW=(W-280)/2;
+    const barP=(x,lbl,val,max,cor)=>{
+      ctx.font='bold 9px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillStyle=cor; ctx.fillText(lbl,x,SBY+STAT_H/2);
+      ctx.fillStyle='#0f1e38'; ctx.fillRect(x+38,SBY+8,bW,11);
+      ctx.fillStyle=cor; ctx.fillRect(x+38,SBY+8,bW*(val/max),11);
+      ctx.font='9px var(--mono)'; ctx.fillStyle=cor+'99'; ctx.fillText(val.toFixed(1)+'%',x+42+bW,SBY+STAT_H/2);
+    };
+    barP(14,  'PS',  E.taxaPS, 100,'#66bb6a');
+    barP(14+bW+82,'Resp',E.taxaResp,30,'#ef6c00');
+    ctx.font='bold 9px var(--fonte)'; ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillStyle=E.stom?'#66bb6a':'#ff7043';
+    ctx.fillText(E.stom?'● Estômatos ABERTOS':'○ Estômatos FECHADOS',W-16,SBY+STAT_H/2);
   }
 };
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  NIVEL 3 — CÉLULA VEGETAL                                    ║
-// ╚══════════════════════════════════════════════════════════════╝
 const NivelCelula = {
   render(ctx, W, H, t) {
-    D.gradV(ctx,0,0,W,H,'#060e1c','#0a1628');
-    const cx=W/2, cy=H/2;
-    const cw=W*0.72, ch=H*0.78;
-    const cx0=cx-cw/2, cy0=cy-ch/2;
+    ctx.fillStyle='#060f1e'; ctx.fillRect(0,0,W,H);
 
-    // Parede celular
-    ctx.strokeStyle='#a5d6a7'; ctx.lineWidth=8;
-    ctx.strokeRect(cx0-4,cy0-4,cw+8,ch+8);
-    ctx.fillStyle='rgba(165,214,167,0.05)';
-    ctx.fillRect(cx0-4,cy0-4,cw+8,ch+8);
-    D.texto(ctx,'Parede Celular',cx,cy0-14,'#a5d6a7aa',9,true);
+    // ── Geometria ────────────────────────────────────────────────
+    const PROC_H=42, PAD=20, TITLE_H=26;
+    const CX=W/2, CY=(H-PROC_H-8)/2+TITLE_H;
+    const CW=W*.70, CH=H-PROC_H-TITLE_H-28;
+    const CX0=CX-CW/2, CY0=CY-CH/2;
 
+    // ── Título ───────────────────────────────────────────────────
+    ctx.fillStyle='#b0c4dc'; ctx.font='bold 12px var(--fonte)';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('CÉLULA VEGETAL',W/2,14);
+
+    // ── Corpo da célula ──────────────────────────────────────────
+    // Parede celular (borda espessa arredondada)
+    ctx.strokeStyle='#a5d6a755'; ctx.lineWidth=10;
+    ctx.beginPath(); ctx.roundRect(CX0-9,CY0-9,CW+18,CH+18,22); ctx.stroke();
     // Membrana plasmática
-    ctx.strokeStyle='#388e3c'; ctx.lineWidth=2;
-    ctx.strokeRect(cx0,cy0,cw,ch);
+    ctx.fillStyle='rgba(7,18,42,.75)';
+    ctx.beginPath(); ctx.roundRect(CX0,CY0,CW,CH,14); ctx.fill();
+    ctx.strokeStyle='#4caf5038'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.roundRect(CX0,CY0,CW,CH,14); ctx.stroke();
 
-    // Vacúolo
-    const vc=0.6; // tamanho relativo
-    ctx.fillStyle='rgba(77,208,225,0.08)';
-    ctx.strokeStyle='#4dd0e1'; ctx.lineWidth=1.5;
-    ctx.beginPath();
-    ctx.ellipse(cx+cw*0.1, cy-ch*0.02, cw*vc*0.5, ch*vc*0.45, 0, 0, Math.PI*2);
-    ctx.fill(); ctx.stroke();
-    D.texto(ctx,'Vacúolo Central',cx+cw*0.1,cy-ch*0.25,'#4dd0e188',10);
+    // ── Vacúolo Central (grande elipse translúcida) ──────────────
+    const VCX=CX+CW*.06, VCY=CY-CH*.03, VRX=CW*.31, VRY=CH*.33;
+    ctx.fillStyle='rgba(77,208,225,.06)'; ctx.strokeStyle='#4dd0e133'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.ellipse(VCX,VCY,VRX,VRY,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
 
-    // Núcleo
-    const nx=cx-cw*0.28, ny=cy+ch*0.18;
-    ctx.fillStyle='rgba(66,165,245,0.15)';
-    ctx.strokeStyle='#42a5f5'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.ellipse(nx,ny,28,24,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-    D.texto(ctx,'Núcleo',nx,ny,'#42a5f5aa',9);
+    // ── Núcleo (quadrante inferior-esquerdo) ─────────────────────
+    const NX=CX-CW*.25, NY=CY+CH*.22, NR=Math.min(28,CH*.09);
+    ctx.fillStyle='rgba(66,165,245,.13)'; ctx.strokeStyle='#42a5f5'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(NX,NY,NR,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    D.circ(ctx,NX+NR*.3,NY-NR*.2,NR*.38,'#1565c0cc',1); // nucléolo
 
-    // ── Cloroplastos ──
-    const cloroPos = [
-      [cx-cw*0.35, cy-ch*0.30], [cx-cw*0.10, cy-ch*0.35],
-      [cx+cw*0.18, cy-ch*0.28], [cx+cw*0.32, cy-ch*0.10],
-      [cx+cw*0.25, cy+ch*0.15], [cx-cw*0.05, cy-ch*0.10],
-      [cx-cw*0.28, cy+ch*0.05],
+    // ── Cloroplastos (área superior, evitando vacúolo) ───────────
+    const cloroPos=[
+      [CX-CW*.32,CY-CH*.30],[CX-CW*.08,CY-CH*.33],
+      [CX+CW*.20,CY-CH*.26],[CX-CW*.32,CY+CH*.04],
+      [CX+CW*.30,CY-CH*.08],
     ];
-    const psAtivo = E.taxaPS > 0;
-    cloroPos.forEach(([px,py],i) => {
-      const glow = psAtivo ? (0.3 + E.taxaPS/100*0.7) : 0.2;
-      const sway = Math.sin(t*0.3+i)*2;
-
-      ctx.save(); ctx.translate(px, py+sway);
-      ctx.rotate(Math.sin(i)*0.3);
-
-      // Corpo do cloroplasto
-      const gc = ctx.createRadialGradient(0,0,0,0,0,20);
-      gc.addColorStop(0, `rgba(76,175,80,${glow})`);
-      gc.addColorStop(1, `rgba(27,94,32,${glow*0.5})`);
-      ctx.beginPath(); ctx.ellipse(0,0,22,14,0,0,Math.PI*2);
-      ctx.fillStyle=gc; ctx.fill();
-      ctx.strokeStyle=`rgba(102,187,106,${glow})`; ctx.lineWidth=1.5; ctx.stroke();
-
-      // Grana (empilhamentos)
-      if (psAtivo && E.luz > 10) {
-        ctx.fillStyle=`rgba(255,213,79,${glow*0.5})`;
-        [-6,0,6].forEach(dx => {
-          ctx.beginPath(); ctx.rect(dx-2,-6,4,12); ctx.fill();
-        });
-      }
-
-      // Atividade PS (flare)
-      if (psAtivo && Math.sin(t*3+i*1.5)>0.5) {
-        ctx.strokeStyle=`rgba(255,213,79,${E.taxaPS/200})`; ctx.lineWidth=1;
-        ctx.beginPath(); ctx.arc(0,0,16+Math.sin(t*3)*3,0,Math.PI*2); ctx.stroke();
-      }
+    const psAtivo=E.taxaPS>0;
+    cloroPos.forEach(([px,py],i)=>{
+      const glow=psAtivo?.35+E.taxaPS/100*.65:.18;
+      const sway=Math.sin(t*.4+i)*1.5;
+      ctx.save(); ctx.translate(px,py+sway); ctx.rotate(Math.sin(i*1.3)*.25);
+      const gc=ctx.createRadialGradient(0,0,2,0,0,22);
+      gc.addColorStop(0,`rgba(100,190,100,${glow})`); gc.addColorStop(1,`rgba(27,94,32,${glow*.5})`);
+      ctx.beginPath(); ctx.ellipse(0,0,22,13,0,0,Math.PI*2); ctx.fillStyle=gc; ctx.fill();
+      ctx.strokeStyle=`rgba(102,187,106,${glow*.85})`; ctx.lineWidth=1.2; ctx.stroke();
+      // Grana internos
+      if(psAtivo&&E.luz>10){ ctx.fillStyle=`rgba(255,213,79,${glow*.4})`; [-7,0,7].forEach(dx=>{ ctx.beginPath(); ctx.rect(dx-2,-8,4,16); ctx.fill(); }); }
+      // Pulso de actividade
+      if(psAtivo&&Math.sin(t*2.5+i*1.7)>.6){ ctx.strokeStyle=`rgba(255,230,60,${E.taxaPS/260})`; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(0,0,18+Math.sin(t*2.5)*2,0,Math.PI*2); ctx.stroke(); }
       ctx.restore();
     });
 
-    // Rótulo cloroplastos
-    D.label(ctx,'Cloroplastos (fotossíntese)',cx-cw*0.1,cy-ch*0.42);
-
-    // ── Mitocôndrias ──
-    const mitoPos = [
-      [cx+cw*0.30, cy+ch*0.30], [cx+cw*0.12, cy+ch*0.32],
-      [cx-cw*0.15, cy+ch*0.35],
-    ];
-    mitoPos.forEach(([px,py],i) => {
-      const respAtivo = E.taxaResp > 5;
-      const glow = respAtivo ? 0.5 + E.taxaResp/60 : 0.2;
-      ctx.save(); ctx.translate(px,py);
-      const gm = ctx.createRadialGradient(0,0,0,0,0,14);
-      gm.addColorStop(0, `rgba(239,108,0,${glow})`);
-      gm.addColorStop(1, `rgba(180,70,0,${glow*0.4})`);
-      ctx.beginPath(); ctx.ellipse(0,0,15,9,Math.sin(i)*0.5,0,Math.PI*2);
-      ctx.fillStyle=gm; ctx.fill();
-      ctx.strokeStyle=`rgba(255,160,0,${glow})`; ctx.lineWidth=1.2; ctx.stroke();
-      // Cristas
-      ctx.strokeStyle=`rgba(255,120,0,${glow*0.4})`; ctx.lineWidth=0.8;
-      for (let c=-8;c<=8;c+=5) {
-        ctx.beginPath(); ctx.moveTo(c,-7); ctx.lineTo(c,7); ctx.stroke();
-      }
+    // ── Mitocôndrias (quadrante inferior-direito) ────────────────
+    const mitPos=[[CX+CW*.26,CY+CH*.27],[CX+CW*.10,CY+CH*.31],[CX+CW*.28,CY+CH*.08]];
+    mitPos.forEach(([px,py],i)=>{
+      const glow=E.taxaResp>5?.5+E.taxaResp/65:.18;
+      ctx.save(); ctx.translate(px,py); ctx.rotate(Math.sin(i*1.1)*.4);
+      const gm=ctx.createRadialGradient(0,0,1,0,0,15);
+      gm.addColorStop(0,`rgba(239,108,0,${glow})`); gm.addColorStop(1,`rgba(170,60,0,${glow*.35})`);
+      ctx.beginPath(); ctx.ellipse(0,0,15,9,0,0,Math.PI*2); ctx.fillStyle=gm; ctx.fill();
+      ctx.strokeStyle=`rgba(255,160,0,${glow*.7})`; ctx.lineWidth=1.2; ctx.stroke();
+      ctx.strokeStyle=`rgba(255,130,0,${glow*.28})`; ctx.lineWidth=.8;
+      for(let c=-9;c<=9;c+=5){ ctx.beginPath(); ctx.moveTo(c,-7); ctx.quadraticCurveTo(c+2,0,c,7); ctx.stroke(); }
       ctx.restore();
     });
-    D.label(ctx,'Mitocôndrias (respiração)',cx+cw*0.18,cy+ch*0.43);
 
-    // ── Fluxos moleculares ──
-    // CO₂ → cloroplasto
-    if (E.stom && E.taxaPS > 5) {
-      const prog = (t*0.8) % 1;
-      const px = cx0 + (cw*0.5)*prog;
-      const py = cy + ch*0.1*(1-prog);
-      D.circ(ctx, px, py, 3, '#90a4ae', 0.6);
+    // ── Rótulos com linhas de chamada (callouts) ─────────────────
+    // Função auxiliar: ponto na estrutura → rótulo fora da célula
+    const callout=(sx,sy,lx,ly,txt,cor)=>{
+      ctx.strokeStyle=cor+'66'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(lx,ly); ctx.stroke();
+      D.circ(ctx,sx,sy,2.5,cor,.85);
+      const mw=ctx.measureText(txt).width+14;
+      ctx.font='bold 10px var(--fonte)';
+      const mwActual=ctx.measureText(txt).width+14;
+      ctx.fillStyle='rgba(7,15,32,.88)'; ctx.beginPath(); ctx.roundRect(lx-mwActual/2,ly-9,mwActual,18,4); ctx.fill();
+      ctx.strokeStyle=cor+'3a'; ctx.lineWidth=.8; ctx.stroke();
+      ctx.fillStyle=cor; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(txt,lx,ly);
+    };
+
+    callout(CX-CW*.18,CY-CH*.28, CX-CW*.52,CY-CH*.38, 'Cloroplastos','#66bb6a');
+    callout(CX+CW*.22,CY+CH*.24, CX+CW*.52,CY+CH*.35, 'Mitocôndrias','#ffb74d');
+    callout(NX,NY-NR,              NX-30,    CY0-12,    'Núcleo',      '#64b5f6');
+    callout(VCX,VCY-VRY+2,        W*.82,    CY0-12,    'Vacúolo Central','#4dd0e1');
+    callout(CX0+CW+10,CY,          CX0+CW+50,CY,       'Parede Celular','#a5d6a7');
+
+    // ── Fluxos moleculares internos ───────────────────────────────
+    // CO₂ do estômato → cloroplasto
+    if(E.stom&&E.taxaPS>5){
+      const pr=(t*.9)%1;
+      D.circ(ctx, CX0+(cloroPos[0][0]-CX0)*pr, CY0+4+(cloroPos[0][1]-CY0-4)*pr, 3,'#90a4ae',.6);
     }
-    // O₂ → fora
-    if (E.taxaPS > 8) {
-      const prog = (t*0.7) % 1;
-      D.circ(ctx, cx-cw*0.3+prog*cw*0.4, cy-ch*0.15-prog*ch*0.1, 3, '#80deea', 0.6);
+    // Glicose cloroplasto → mitocôndria
+    if(E.taxaPS>3){
+      const pr=(t*.55)%1;
+      D.circ(ctx, cloroPos[0][0]+(mitPos[0][0]-cloroPos[0][0])*pr,
+                  cloroPos[0][1]+(mitPos[0][1]-cloroPos[0][1])*pr, 3.5,'#ffb300',.7);
     }
-    // Glicose → mitocôndria
-    if (E.taxaPS > 3 && E.floema) {
-      const prog = (t*0.5) % 1;
-      const sx=cx-cw*0.1+prog*cw*0.4, sy=cy-ch*0.05+prog*ch*0.38;
-      D.circ(ctx,sx,sy,3.5,'#ffb300',0.7);
+    // O₂ saindo pela membrana
+    if(E.taxaPS>8){
+      const pr=(t*.7)%1;
+      D.circ(ctx, CX-CW*.25+pr*(CX0-20-CX+CW*.25), CY-CH*.14, 3,'#80deea',.6);
     }
 
-    // ── Painéis de processo ──
-    // PS
-    const psX=cx0+4, psY=cy0+5, psW=130, psH=36;
-    ctx.fillStyle='rgba(27,94,32,.4)'; ctx.beginPath(); ctx.roundRect(psX,psY,psW,psH,6); ctx.fill();
-    ctx.strokeStyle='#4caf5060'; ctx.lineWidth=1; ctx.stroke();
-    D.texto(ctx,'Fotossíntese',psX+psW/2,psY+11,'#a5d6a7',9,true);
-    ctx.fillStyle='#112240'; ctx.fillRect(psX+5,psY+19,psW-10,7);
-    ctx.fillStyle=`hsl(120,60%,${30+E.taxaPS*0.4}%)`;
-    ctx.fillRect(psX+5,psY+19,(psW-10)*(E.taxaPS/100),7);
+    // ── Barras de processo (faixa inferior) ──────────────────────
+    const PBY=H-PROC_H-2;
+    ctx.fillStyle='rgba(8,18,38,.96)'; ctx.beginPath(); ctx.roundRect(PAD,PBY,W-PAD*2,PROC_H,7); ctx.fill();
+    ctx.strokeStyle='#1a3557'; ctx.lineWidth=1; ctx.stroke();
 
-    // Resp
-    const rX=cx0+cw-134, rY=cy0+5;
-    ctx.fillStyle='rgba(230,81,0,.3)'; ctx.beginPath(); ctx.roundRect(rX,rY,psW,psH,6); ctx.fill();
-    ctx.strokeStyle='#ef6c0060'; ctx.lineWidth=1; ctx.stroke();
-    D.texto(ctx,'Respiração Celular',rX+psW/2,rY+11,'#ffcc80',9,true);
-    ctx.fillStyle='#112240'; ctx.fillRect(rX+5,rY+19,psW-10,7);
-    ctx.fillStyle=`hsl(25,85%,${25+E.taxaResp*0.7}%)`;
-    ctx.fillRect(rX+5,rY+19,(psW-10)*(E.taxaResp/30),7);
+    ctx.font='bold 9px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#4db6acaa'; ctx.fillText('PROCESSOS SIMULTÂNEOS NA CÉLULA',W/2,PBY+PROC_H/2);
 
-    D.texto(ctx,'CÉLULA VEGETAL',cx,cy0-14,'#dce8f5aa',11,true);
+    const bW2=(W-PAD*2-240)/2;
+    const procBar=(x,label,val,maxV,cor,sub)=>{
+      ctx.font='bold 9px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillStyle=cor; ctx.fillText(label,x,PBY+11);
+      ctx.fillStyle='#0f1e38'; ctx.fillRect(x,PBY+19,bW2,10);
+      ctx.fillStyle=cor; ctx.fillRect(x,PBY+19,bW2*(Math.min(val,maxV)/maxV),10);
+      ctx.font='8px var(--mono)'; ctx.fillStyle=cor+'99'; ctx.fillText(val.toFixed(1)+'%',x+bW2+5,PBY+24);
+      ctx.font='8px var(--fonte)'; ctx.fillStyle='#4a6a84'; ctx.fillText(sub,x,PBY+35);
+    };
+    procBar(PAD+10,  '● Fotossíntese',E.taxaPS, 100,'#66bb6a','nos cloroplastos → CO₂+H₂O+luz → glicose');
+    procBar(PAD+10+bW2+80,'● Respiração', E.taxaResp,30, '#ef6c00','nas mitocôndrias → glicose+O₂ → ATP');
   }
 };
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  NIVEL 4 — CLOROPLASTO                                       ║
-// ╚══════════════════════════════════════════════════════════════╝
+
 const NivelCloroplasto = {
   render(ctx, W, H, t) {
-    D.gradV(ctx,0,0,W,H,'#060e1c','#071828');
-    const cx=W/2, cy=H/2;
-    const cw=W*0.85, ch=H*0.82;
-    const cx0=cx-cw/2, cy0=cy-ch/2;
-
-    // Corpo do cloroplasto
-    const gc = ctx.createRadialGradient(cx,cy,20,cx,cy,cw*0.45);
-    gc.addColorStop(0,'#1b5e20'); gc.addColorStop(1,'#0a2a0e');
-    ctx.beginPath(); ctx.ellipse(cx,cy,cw/2,ch/2,0,0,Math.PI*2);
-    ctx.fillStyle=gc; ctx.fill();
-    ctx.strokeStyle='#4caf5060'; ctx.lineWidth=3; ctx.stroke();
-
-    // Divisão: tilacóide (superior) vs estroma (inferior)
-    const divY = cy - ch*0.08;
-    ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=1;
-    ctx.setLineDash([8,6]);
-    ctx.beginPath(); ctx.moveTo(cx0+20, divY); ctx.lineTo(cx0+cw-20, divY); ctx.stroke();
-    ctx.setLineDash([]);
-    D.texto(ctx,'← FASE LUMINOSA (Tilacóides) →', cx, divY-12, '#a5d6a7aa', 9, true);
-    D.texto(ctx,'← CICLO DE CALVIN (Estroma) →', cx, divY+12, '#80cbc4aa', 9, true);
-
-    // ── GRANA (empilhamentos de tilacóides) ──
-    const grana = [
-      {x:cx-cw*0.30, y:cy-ch*0.22, n:5},
-      {x:cx-cw*0.05, y:cy-ch*0.26, n:6},
-      {x:cx+cw*0.22, y:cy-ch*0.20, n:4},
-    ];
-
-    grana.forEach((g,gi) => {
-      const luzN = E.luz/100;
-      const hTilac = 11, wTilac = 30, gap = 2;
-
-      for (let k=0; k<g.n; k++) {
-        const ky = g.y + k*(hTilac+gap) - g.n*(hTilac+gap)/2;
-
-        // Membrana tilacóide
-        const gt = ctx.createLinearGradient(g.x-wTilac/2, ky, g.x+wTilac/2, ky+hTilac);
-        gt.addColorStop(0, `rgba(30,100,30,0.9)`);
-        gt.addColorStop(.5, `rgba(50,140,50,0.95)`);
-        gt.addColorStop(1, `rgba(30,100,30,0.9)`);
-        ctx.fillStyle=gt; ctx.beginPath();
-        ctx.roundRect(g.x-wTilac/2, ky, wTilac, hTilac, 3); ctx.fill();
-
-        // Proteínas nas membranas (fases luminosas)
-        if (luzN > 0.05) {
-          // PSII
-          D.circ(ctx, g.x-10, ky+hTilac/2, 3.5, '#4fc3f7', 0.7+luzN*0.3);
-          // PSI
-          D.circ(ctx, g.x+6, ky+hTilac/2, 3, '#80deea', 0.6+luzN*0.3);
-          // ATP-sintase (entre graná)
-          if (k===g.n-1) {
-            const asx=g.x, asy=ky+hTilac+3;
-            ctx.save();
-            ctx.translate(asx,asy);
-            ctx.rotate(t * 2.5 * luzN);
-            ctx.fillStyle=`rgba(206,147,216,${0.4+luzN*0.5})`;
-            for (let b=0;b<3;b++) {
-              const ba=b/3*Math.PI*2;
-              ctx.beginPath(); ctx.arc(Math.cos(ba)*5,Math.sin(ba)*5,3,0,Math.PI*2); ctx.fill();
-            }
-            ctx.restore();
-          }
-        }
-
-        // Elétrons fluindo
-        if (luzN > 0.1) {
-          const ep = (t * 2.5 + gi * 0.7 + k * 0.3) % 1;
-          const ex = g.x - wTilac/2 + ep * wTilac;
-          D.circ(ctx, ex, ky + hTilac/2, 2.5, '#ff8a65', 0.7 * luzN);
-        }
-      }
-
-      // Lamin (lamela intergrana)
-      if (gi < grana.length-1) {
-        const g2 = grana[gi+1];
-        ctx.strokeStyle='#2e7d3260'; ctx.lineWidth=2;
-        ctx.beginPath(); ctx.moveTo(g.x+wTilac/2, g.y); ctx.lineTo(g2.x-wTilac/2, g2.y); ctx.stroke();
-      }
-    });
-
-    // Rótulos grana
-    D.label(ctx,'Grana', cx-cw*0.05, cy-ch*0.38);
-    D.label(ctx,'PSII','#4fc3f7aa');
-
-    // ── ESTROMA (Ciclo de Calvin) ──
-    const ecy = cy + ch*0.12;
-    const erx = cx, ery = ecy;
-    const er = Math.min(cw,ch)*0.22;
-
-    // Ciclo oval
-    ctx.strokeStyle='rgba(128,203,196,0.5)'; ctx.lineWidth=2;
-    ctx.setLineDash([5,3]);
-    ctx.beginPath(); ctx.ellipse(erx,ery,er*1.2,er*0.7,0,0,Math.PI*2); ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Nós do ciclo de Calvin
-    const calvinNos = [
-      { label:'RuBP',  a:-Math.PI/2,    cor:'#80cbc4' },
-      { label:'3-PGA', a:-Math.PI/2+Math.PI*2/3, cor:'#4db6ac' },
-      { label:'G3P',   a:-Math.PI/2+Math.PI*4/3, cor:'#26a69a' },
-    ];
-    calvinNos.forEach(n => {
-      const nx = erx + er*1.2*Math.cos(n.a);
-      const ny = ery + er*0.7*Math.sin(n.a);
-      ctx.fillStyle=n.cor; ctx.beginPath(); ctx.arc(nx,ny,12,0,Math.PI*2); ctx.fill();
-      D.texto(ctx, n.label, nx, ny, '#fff', 8, true);
-    });
-
-    // Molécula CO₂ entrando
-    const co2prog = (t*0.6) % 1;
-    const co2x = cx-cw*0.4 + co2prog*cw*0.4;
-    const co2y = ery;
-    D.circ(ctx, co2x, co2y, 4, '#90a4ae', 0.7);
-    D.texto(ctx,'CO₂',co2x,co2y-8,'#90a4ae',8);
-
-    // ATP e NADPH sendo consumidos
-    const atpProg = (t*0.8+0.2) % 1;
-    D.circ(ctx, erx+er*1.2*0.5, ery-er*0.7*0.5 + atpProg*10, 3.5, '#ce93d8', 0.6+atpProg*0.3);
-    D.texto(ctx,'ATP',erx+er*0.6,ery-er*0.35,'#ce93d8aa',8);
-
-    // Glicose saindo
-    if (E.taxaPS > 5) {
-      const gp = (t*0.4) % 1;
-      D.circ(ctx, erx+er*0.8+gp*50, ery+er*0.3, 5, '#ffb300', 0.5+gp*0.3);
-      D.texto(ctx,'Glicose',erx+er*0.8+30,ery+er*0.3+14,'#ffb300aa',8,true);
-    }
-
-    // Partículas de prótons (gradiente)
+    ctx.fillStyle='#060f1e'; ctx.fillRect(0,0,W,H);
     const luzN=E.luz/100;
-    if (luzN > 0.1) {
-      for (let i=0; i<8; i++) {
-        const pp = (t*1.5+i/8) % 1;
-        const px = cx-cw*0.38+pp*cw*0.76;
-        const py = divY - 18 - Math.sin(pp*Math.PI)*15;
-        D.circ(ctx, px, py, 2.5, '#fff176', 0.4+luzN*0.5);
-      }
-      D.texto(ctx,'H⁺ (gradiente de prótons)', cx, divY-30, '#fff17688', 9);
-    }
 
-    D.texto(ctx,'CLOROPLASTO',cx,cy0-14,'#dce8f5aa',11,true);
-    D.label(ctx,'Tilacóide',cx-cw*0.05,cy-ch*0.15);
-    D.label(ctx,'Estroma',cx,ecy+er*0.8);
+    // ── Geometria ────────────────────────────────────────────────
+    const PAD=16, TITLE_H=26, STAT_H=30;
+    const BX=PAD, BY=TITLE_H, BW=W-PAD*2, BH=H-TITLE_H-STAT_H;
+    const DIV_X=BX+BW*.55; // divisória: esquerda=grana, direita=Calvin
+
+    // ── Título ───────────────────────────────────────────────────
+    ctx.fillStyle='#b0c4dc'; ctx.font='bold 12px var(--fonte)';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('CLOROPLASTO',W/2,14);
+
+    // ── Corpo do cloroplasto (fundo arredondado) ──────────────────
+    const gcB=ctx.createRadialGradient(W/2,H/2,20,W/2,H/2,BW*.5);
+    gcB.addColorStop(0,'#112414'); gcB.addColorStop(1,'#070e08');
+    ctx.fillStyle=gcB; ctx.beginPath(); ctx.roundRect(BX,BY,BW,BH,24); ctx.fill();
+    ctx.strokeStyle='#2e7d3233'; ctx.lineWidth=2; ctx.stroke();
+
+    // ── Divisória entre zonas ─────────────────────────────────────
+    ctx.strokeStyle='rgba(255,255,255,.045)'; ctx.lineWidth=1; ctx.setLineDash([6,5]);
+    ctx.beginPath(); ctx.moveTo(DIV_X,BY+14); ctx.lineTo(DIV_X,BY+BH-14); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Cabeçalhos de zona
+    ctx.font='bold 9px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#80cbc488'; ctx.fillText('FASE LUMINOSA — Tilacóides/Grana',BX+(DIV_X-BX)/2,BY+11);
+    ctx.fillStyle='#4db6ac77'; ctx.fillText('CICLO DE CALVIN — Estroma',DIV_X+(BW-(DIV_X-BX))/2,BY+11);
+
+    // ════════════════════════════════════════════════
+    // ZONA ESQUERDA — Grana + ETC
+    // ════════════════════════════════════════════════
+    const LX=BX+12, LY=BY+24, LW=DIV_X-BX-24, LH=BH-38;
+
+    // 3 grana uniformemente espaçados
+    const DISC_H=13, DISC_W=34, DISC_GAP=2;
+    const granaData=[{x:LX+LW*.17,n:6},{x:LX+LW*.50,n:5},{x:LX+LW*.83,n:4}];
+
+    granaData.forEach((g,gi)=>{
+      const stackH=g.n*(DISC_H+DISC_GAP);
+      const sy=LY+LH/2-stackH/2;
+
+      for(let k=0;k<g.n;k++){
+        const dy=sy+k*(DISC_H+DISC_GAP);
+        // Disco tilacóide
+        const dt=ctx.createLinearGradient(g.x-DISC_W/2,dy,g.x+DISC_W/2,dy+DISC_H);
+        dt.addColorStop(0,'rgba(28,88,30,.95)'); dt.addColorStop(.5,'rgba(54,138,58,.95)'); dt.addColorStop(1,'rgba(28,88,30,.95)');
+        ctx.fillStyle=dt; ctx.beginPath(); ctx.roundRect(g.x-DISC_W/2,dy,DISC_W,DISC_H,4); ctx.fill();
+        ctx.strokeStyle='rgba(76,175,80,.28)'; ctx.lineWidth=.7; ctx.stroke();
+
+        // Complexos PSII e PSI nas membranas (exceto topo do stack)
+        if(luzN>.05&&k<g.n-1){
+          D.circ(ctx,g.x-9,dy+DISC_H/2,3.5,'#29b6f6',.65+luzN*.3);
+          D.circ(ctx,g.x+8,dy+DISC_H/2,3,'#4dd0e1',.55+luzN*.3);
+        }
+        // Elétrons fluindo
+        if(luzN>.1){
+          const ep=(t*2.8+gi*.9+k*.32)%1;
+          D.circ(ctx,g.x-DISC_W/2+ep*DISC_W,dy+DISC_H*.28,2.5,'#ff8a65',.65*luzN);
+        }
+        // ATP-sintase na base de cada granum (entre membranas externas)
+        if(k===g.n-1&&luzN>.05){
+          const asy=dy+DISC_H+4;
+          ctx.save(); ctx.translate(g.x,asy); ctx.rotate(t*2.5*luzN);
+          ctx.strokeStyle=`rgba(206,147,216,${.45+luzN*.5})`; ctx.lineWidth=2;
+          for(let b=0;b<3;b++){ const ba=b/3*Math.PI*2; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba)*7,Math.sin(ba)*7); ctx.stroke(); }
+          ctx.restore();
+          // ATP saindo
+          if(luzN>.15){ const ap=(t*1.1+gi*.35)%1; D.circ(ctx,g.x+14+ap*20,asy-ap*12,3,'#ce93d8',.5+ap*.4); }
+        }
+      }
+      // Lamela intergrana
+      if(gi<granaData.length-1){
+        const g2=granaData[gi+1]; const midY=LY+LH*.48;
+        ctx.strokeStyle='#2e7d3244'; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.moveTo(g.x+DISC_W/2,midY); ctx.lineTo(g2.x-DISC_W/2,midY); ctx.stroke();
+      }
+      // Rótulo "Grana n" acima de cada stack
+      const topY=LY+LH/2-g.n*(DISC_H+DISC_GAP)/2;
+      ctx.font='bold 8px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillStyle='#80cbc466'; ctx.fillText(`Grana ${gi+1}`,g.x,topY-3);
+    });
+
+    // Rótulos PSII / PSI
+    ctx.font='8px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillStyle='#29b6f677'; ctx.fillText('PSII',granaData[1].x-9,LY+LH*.55);
+    ctx.fillStyle='#4dd0e177'; ctx.fillText('PSI',granaData[1].x+8,LY+LH*.55);
+
+    // H₂O entrando → O₂ saindo (PSII)
+    if(luzN>.1){
+      const pp=(t*1.3)%1; const gx=granaData[0].x-DISC_W/2-6;
+      D.circ(ctx,gx-pp*10,LY+LH*.28+pp*8,3,'#4fc3f7',1-pp);
+      ctx.font='8px var(--fonte)'; ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillStyle='#4fc3f766'; ctx.fillText('H₂O →',gx-2,LY+LH*.22);
+      const op=(t*1.1+.5)%1;
+      D.circ(ctx,gx-op*12,LY+LH*.55+op*14,3,'#80deea',op*.8);
+      ctx.fillStyle='#80deea66'; ctx.fillText('O₂ ←',gx-2,LY+LH*.66);
+    }
+    // Gradiente H⁺ no lúmen
+    if(luzN>.05){
+      for(let i=0;i<6;i++){ const pp=(t*1.9+i/6)%1; D.circ(ctx,LX+LW*(.1+pp*.7),LY+LH*.86+Math.sin(pp*Math.PI*2)*4,2.5,'#fff176',.32+luzN*.5); }
+      ctx.font='8px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillStyle='#fff17655'; ctx.fillText('H⁺ acumula no lúmen',LX+LW/2,LY+LH*.96);
+    }
+    // ATP / NADPH saindo para o lado Calvin
+    ctx.font='bold 9px var(--fonte)'; ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillStyle=`rgba(206,147,216,${.4+luzN*.5})`; ctx.fillText(`ATP → ${E.atpProd.toFixed(1)}`,DIV_X-8,LY+LH*.40);
+    ctx.fillStyle=`rgba(128,203,196,${.4+luzN*.5})`; ctx.fillText(`NADPH → ${E.nadphProd.toFixed(1)}`,DIV_X-8,LY+LH*.52);
+    // Setas de transferência
+    if(luzN>.1){[LY+LH*.40,LY+LH*.52].forEach((ay,ai)=>{
+      const pr=(t*.75+ai*.4)%1;
+      D.circ(ctx,DIV_X-22+pr*18,ay,3,ai===0?'#ce93d8':'#80cbc4',.45+pr*.45);
+    });}
+
+    // ════════════════════════════════════════════════
+    // ZONA DIREITA — Estroma + Ciclo de Calvin
+    // ════════════════════════════════════════════════
+    const RX=DIV_X+14, RY=BY+24, RW=BW-(DIV_X-BX)-26, RH=BH-38;
+    ctx.fillStyle='rgba(0,70,50,.04)'; ctx.beginPath(); ctx.roundRect(RX,RY,RW,RH,8); ctx.fill();
+
+    const CCX=RX+RW/2, CCY=RY+RH*.52;
+    const CCR=Math.min(RW*.34,RH*.36);
+
+    // Anel do ciclo
+    ctx.strokeStyle='rgba(128,203,196,.28)'; ctx.lineWidth=1.8;
+    ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(CCX,CCY,CCR,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+
+    // 4 nós do Ciclo de Calvin
+    const calvinNos=[
+      {a:-Math.PI*.5,              label:'CO₂\n+RuBP', cor:'#80cbc4', r:19},
+      {a:-Math.PI*.5+Math.PI*.65,  label:'3-PGA',       cor:'#4db6ac', r:17},
+      {a:-Math.PI*.5+Math.PI*1.25, label:'G3P',         cor:'#26a69a', r:17},
+      {a:-Math.PI*.5+Math.PI*1.82, label:'RuBP',        cor:'#80cbc4', r:15},
+    ];
+    // Setas entre nós
+    calvinNos.forEach((n,i)=>{
+      const n2=calvinNos[(i+1)%calvinNos.length];
+      D.seta(ctx, CCX+CCR*Math.cos(n.a+.22),CCY+CCR*Math.sin(n.a+.22),
+                  CCX+CCR*Math.cos(n2.a-.22),CCY+CCR*Math.sin(n2.a-.22),'rgba(128,203,196,.32)',1.5);
+    });
+    // Nós
+    calvinNos.forEach(n=>{
+      const nx=CCX+CCR*Math.cos(n.a), ny=CCY+CCR*Math.sin(n.a);
+      ctx.fillStyle=n.cor+'2e'; ctx.beginPath(); ctx.arc(nx,ny,n.r,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle=n.cor+'bb'; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.font='bold 8px var(--mono)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='#e0f2f1';
+      const lines=n.label.split('\n'); lines.forEach((l,li)=>ctx.fillText(l,nx,ny+(li-.5*(lines.length-1))*9));
+    });
+    // RuBisCO no centro
+    ctx.font='bold 9px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#4db6acaa'; ctx.fillText('RuBisCO',CCX,CCY);
+
+    // CO₂ entrando
+    const n0x=CCX+CCR*Math.cos(-Math.PI*.5), n0y=CCY+CCR*Math.sin(-Math.PI*.5);
+    if(E.co2>0){ const cp=(t*.7)%1; D.circ(ctx,n0x-28+cp*26,n0y-4,4,'#90a4ae',.5+cp*.4); }
+    ctx.font='9px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillStyle='#90a4ae88'; ctx.fillText(`CO₂ — ${E.co2} ppm`,n0x,n0y-calvinNos[0].r-12);
+
+    // ATP + NADPH consumidos
+    if(luzN>.1){ const n1=calvinNos[1]; const n1x=CCX+CCR*Math.cos(n1.a),n1y=CCY+CCR*Math.sin(n1.a);
+      const ap=(t*.85)%1; D.circ(ctx,n1x-20+ap*18,n1y-ap*8,3.5,'#ce93d8',.4+ap*.4);
+      ctx.font='8px var(--fonte)'; ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillStyle='#ce93d877'; ctx.fillText('ATP+NADPH',n1x-8,n1y-20); }
+
+    // G3P → Glicose
+    if(E.taxaPS>5){ const n2=calvinNos[2]; const n2x=CCX+CCR*Math.cos(n2.a),n2y=CCY+CCR*Math.sin(n2.a);
+      const gp=(t*.5)%1; D.circ(ctx,n2x+gp*38,n2y+gp*12,4.5,'#ffb300',.45+gp*.4);
+      ctx.font='bold 9px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillStyle='#ffb30099'; ctx.fillText('→ Glicose',n2x+8,n2y+22); }
+
+    // ── Barra de status ───────────────────────────────────────────
+    const SBY=H-STAT_H-2;
+    ctx.fillStyle='rgba(8,18,38,.96)'; ctx.beginPath(); ctx.roundRect(PAD,SBY,W-PAD*2,STAT_H,6); ctx.fill();
+    ctx.strokeStyle='#1a3557'; ctx.lineWidth=1; ctx.stroke();
+
+    ctx.font='9px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillStyle='#80cbc488'; ctx.fillText(`Luz: ${E.luz}%`,PAD+10,SBY+STAT_H/2);
+    ctx.fillStyle='#90a4ae88'; ctx.fillText(`CO₂: ${E.co2} ppm`,PAD+70,SBY+STAT_H/2);
+    ctx.fillStyle='#ce93d888'; ctx.fillText(`ATP: ${E.atpProd.toFixed(1)}`,PAD+170,SBY+STAT_H/2);
+    ctx.fillStyle='#80cbc488'; ctx.fillText(`NADPH: ${E.nadphProd.toFixed(1)}`,PAD+240,SBY+STAT_H/2);
+    ctx.fillStyle='#66bb6a88'; ctx.fillText(`PS: ${E.taxaPS.toFixed(1)}%`,PAD+330,SBY+STAT_H/2);
+    ctx.fillStyle='#ef6c0088'; ctx.fillText(`Resp: ${E.taxaResp.toFixed(1)}%`,PAD+390,SBY+STAT_H/2);
   }
 };
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  NIVEL 5 — NÍVEL MOLECULAR                                   ║
-// ╚══════════════════════════════════════════════════════════════╝
 const NivelMolecular = {
   render(ctx, W, H, t) {
-    D.gradV(ctx,0,0,W,H,'#060e1c','#040d18');
+    ctx.fillStyle='#060f1e'; ctx.fillRect(0,0,W,H);
+    const luzN=E.luz/100;
 
-    // Divisão em duas partes: ETC (superior) e Ciclo de Calvin (inferior)
-    const divH = H * 0.52;
-    ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(20,divH); ctx.lineTo(W-20,divH); ctx.stroke();
+    // ── Geometria ────────────────────────────────────────────────
+    const PAD=14;
+    const ETC_H=H*.57;  // seção superior: cadeia de transporte de elétrons
+    const CAL_Y=ETC_H;  // seção inferior: Ciclo de Calvin
 
-    D.texto(ctx,'CADEIA DE TRANSPORTE DE ELÉTRONS — MEMBRANA TILACOIDAL',W/2,18,'#a5d6a7aa',10,true);
-    D.texto(ctx,'CICLO DE CALVIN (Fixação do Carbono)',W/2,divH+14,'#80cbc4aa',10,true);
+    // Divisória
+    ctx.strokeStyle='rgba(255,255,255,.055)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(PAD,ETC_H); ctx.lineTo(W-PAD,ETC_H); ctx.stroke();
 
-    const luzN = E.luz/100;
 
-    // ─── FASE LUMINOSA ───────────────────────────────────────────
-    const Y1 = divH * 0.48;
-    const memY = Y1;
+    ctx.fillStyle='#a5d6a7aa'; ctx.font='bold 11px var(--fonte)';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('CADEIA DE TRANSPORTE DE ELÉTRONS — MEMBRANA TILACOIDAL',W/2,11);
 
-    // Membrana tilacoidal (faixas)
-    const gradMem = ctx.createLinearGradient(0,memY-20,0,memY+20);
-    gradMem.addColorStop(0,'#1b5e2040');
-    gradMem.addColorStop(.5,'#2e7d3290');
-    gradMem.addColorStop(1,'#1b5e2040');
-    ctx.fillStyle=gradMem; ctx.fillRect(40, memY-20, W-80, 40);
-    D.texto(ctx,'Membrana Tilacoidal',W/2,memY-28,'#4caf5044',9);
-    D.texto(ctx,'Lúmen do Tilacóide (alto H⁺)',W/2,memY+34,'#fff17644',9);
-    D.texto(ctx,'Estroma (baixo H⁺)',W/2,memY-40,'#80cbc444',9);
+    // ── Membrana ─────────────────────────────────────────────────
+    // Membrana centrada verticalmente na zona ETC
+    const MEM_CY=ETC_H*.52, MEM_H=50;
+    const MEM_X=PAD+10, MEM_W=W-PAD*2-20;
 
-    // Complexos proteicos na membrana
-    const comps = [
-      { id:'PSII', x:W*0.12, cor:'#1e88e5', desc:'P680\nH₂O→O₂' },
-      { id:'PQ',   x:W*0.27, cor:'#78909c', desc:'Plastoquinona\ncarreg. e⁻' },
-      { id:'Cit',  x:W*0.43, cor:'#6d4c41', desc:'Citocromob6f\npomba H⁺' },
-      { id:'PC',   x:W*0.58, cor:'#1565c0', desc:'Plastocianina\ne⁻→PSI' },
-      { id:'PSI',  x:W*0.72, cor:'#0097a7', desc:'P700\nNADP⁺→NADPH' },
-      { id:'ATPasd',x:W*0.88, cor:'#7b1fa2', desc:'ATP-sintase\nH⁺→ATP' },
+    // Rótulos de zona (estroma acima, lúmen abaixo)
+    ctx.font='bold 9px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillStyle='#80cbc455'; ctx.fillText('ESTROMA  (baixo H⁺)',MEM_X+2,MEM_CY-MEM_H/2-10);
+    ctx.fillStyle='#fff17655'; ctx.fillText('LÚMEN DO TILACÓIDE  (alto H⁺)',MEM_X+2,MEM_CY+MEM_H/2+10);
+
+    // Fundo da membrana
+    const gMem=ctx.createLinearGradient(0,MEM_CY-MEM_H/2,0,MEM_CY+MEM_H/2);
+    gMem.addColorStop(0,'rgba(28,95,32,.55)'); gMem.addColorStop(.5,'rgba(52,135,56,.65)'); gMem.addColorStop(1,'rgba(28,95,32,.55)');
+    ctx.fillStyle=gMem; ctx.fillRect(MEM_X,MEM_CY-MEM_H/2,MEM_W,MEM_H);
+    ctx.strokeStyle='rgba(76,175,80,.3)'; ctx.lineWidth=1.2; ctx.strokeRect(MEM_X,MEM_CY-MEM_H/2,MEM_W,MEM_H);
+
+    // ── Complexos proteicos ───────────────────────────────────────
+    // Cada complexo tem: id, legenda de 1 linha, entrada/saída, cor
+    const COMPS=[
+      {id:'PSII',    sub:'P680',         ioTop:'H₂O → O₂+H⁺', ioBot:'e⁻ excitado',  cor:'#1e88e5'},
+      {id:'PQ',      sub:'Plastoquinona',ioTop:'shuttle e⁻',   ioBot:'lúmen → H⁺',  cor:'#78909c'},
+      {id:'Cit b6f', sub:'Citocromo b6f',ioTop:'bomba H⁺',     ioBot:'lúmen ←',      cor:'#8d6e63'},
+      {id:'PC',      sub:'Plastocianina',ioTop:'e⁻ → PSI',     ioBot:'no lúmen',     cor:'#5c6bc0'},
+      {id:'PSI',     sub:'P700',         ioTop:'NADP⁺→NADPH', ioBot:'e⁻ excitado',  cor:'#0097a7'},
+      {id:'ATPase',  sub:'ATP-sintase',  ioTop:'H⁺ → ATP',    ioBot:'gradiente',    cor:'#8e24aa'},
     ];
 
-    comps.forEach((c,i) => {
-      const glow = luzN * (i===5 ? 0.9 : 1);
-      // Corpo do complexo
-      const gh = ctx.createLinearGradient(c.x-22,memY-18,c.x+22,memY+18);
-      gh.addColorStop(0, c.cor+'aa');
-      gh.addColorStop(1, c.cor+'44');
-      ctx.fillStyle=gh;
-      ctx.beginPath(); ctx.roundRect(c.x-22,memY-18,44,36,5); ctx.fill();
-      ctx.strokeStyle=c.cor+(Math.floor(100+luzN*100).toString(16));
-      ctx.lineWidth=1.5; ctx.stroke();
+    // Espaçamento uniforme: cada complexo ocupa MEM_W/6 de coluna
+    const COL_W=MEM_W/COMPS.length;
+    const compXs=COMPS.map((_,i)=>MEM_X+COL_W*i+COL_W/2);
+    const CBOX_W=Math.min(52,COL_W-12); // largura do box do complexo
 
-      // ID
-      ctx.fillStyle='#fff'; ctx.font='bold 9px var(--mono)'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(c.id, c.x, memY-5);
+    COMPS.forEach((c,i)=>{
+      const cx2=compXs[i];
+      const glow=luzN;
 
-      // Desc
-      const lines=c.desc.split('\n');
-      ctx.fillStyle=c.cor; ctx.font='8px var(--fonte)';
-      lines.forEach((l,li) => ctx.fillText(l, c.x, memY+6+li*9));
+      // Corpo do complexo (span total da membrana)
+      const gc=ctx.createLinearGradient(cx2-CBOX_W/2,MEM_CY-MEM_H/2,cx2+CBOX_W/2,MEM_CY+MEM_H/2);
+      const a1=Math.floor(60+glow*100).toString(16).padStart(2,'0');
+      const a2=Math.floor(30+glow*55).toString(16).padStart(2,'0');
+      gc.addColorStop(0,c.cor+a1); gc.addColorStop(1,c.cor+a2);
+      ctx.fillStyle=gc; ctx.beginPath(); ctx.roundRect(cx2-CBOX_W/2,MEM_CY-MEM_H/2,CBOX_W,MEM_H,5); ctx.fill();
+      const aBord=Math.floor(55+glow*140).toString(16).padStart(2,'0');
+      ctx.strokeStyle=c.cor+aBord; ctx.lineWidth=1.5; ctx.stroke();
 
-      // ATP-sintase rotacionando
-      if (c.id==='ATPasd' && luzN>0.05) {
-        ctx.save(); ctx.translate(c.x, memY+20);
-        ctx.rotate(t * 2 * luzN);
-        ctx.strokeStyle='#ce93d880'; ctx.lineWidth=2;
-        for (let b=0;b<3;b++) {
-          const ba=b/3*Math.PI*2;
-          ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba)*10,Math.sin(ba)*10); ctx.stroke();
-        }
+      // Nome do complexo (acima da membrana, fora)
+      ctx.font='bold 9px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillStyle=c.cor+(Math.floor(160+glow*80).toString(16).padStart(2,'0'));
+      ctx.fillText(c.id,cx2,MEM_CY-MEM_H/2-3);
+
+      // Sub-nome dentro do complexo
+      ctx.font='bold 8px var(--mono)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle=`rgba(255,255,255,${.45+glow*.45})`; ctx.fillText(c.sub,cx2,MEM_CY);
+
+      // IO abaixo da membrana (lúmen)
+      ctx.font='8px var(--fonte)'; ctx.textBaseline='top';
+      ctx.fillStyle=c.cor+'88'; ctx.fillText(c.ioTop,cx2,MEM_CY+MEM_H/2+3);
+
+      // ATP-sintase: rotor giratório
+      if(c.id==='ATPase'&&luzN>.05){
+        ctx.save(); ctx.translate(cx2,MEM_CY+MEM_H/2-8);
+        ctx.rotate(t*2.5*luzN);
+        ctx.strokeStyle=`rgba(206,147,216,${.45+luzN*.5})`; ctx.lineWidth=2;
+        for(let b=0;b<3;b++){ const ba=b/3*Math.PI*2; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba)*10,Math.sin(ba)*10); ctx.stroke(); }
         ctx.restore();
       }
     });
 
-    // Elétrons fluindo na cadeia
-    if (luzN > 0.05) {
-      const nEl = Math.ceil(luzN*5);
-      for (let e=0; e<nEl; e++) {
-        const prog = (t * 1.8 + e/nEl) % 1;
-        // Segmentos: PSII→PQ→Cit→PC→PSI
-        const segs = [
-          [comps[0].x+22, W*0.27-22],
-          [comps[1].x+22, W*0.43-22],
-          [comps[2].x+22, W*0.58-22],
-          [comps[3].x+22, W*0.72-22],
-        ];
-        const totalLen = segs.reduce((a,s)=>a+(s[1]-s[0]),0);
-        let dx = prog * totalLen;
-        let ex = comps[0].x + 22;
-        for (const [x0,x1] of segs) {
-          const sw = x1-x0;
-          if (dx <= sw) { ex = x0+dx; break; }
-          dx -= sw; ex = x1;
-        }
-        const ey = memY - 12 - Math.sin(prog*Math.PI*4)*5;
-        D.circ(ctx, ex, ey, 3.5, '#ff8a65', 0.5+luzN*0.5);
+    // ── Fluxo de elétrons (partículas no estroma, acima da membrana) ──
+    if(luzN>.05){
+      const nEl=Math.ceil(luzN*4+1);
+      // Caminho: PSII → PQ → Cit b6f → PC → PSI (compXs 0..4)
+      const path=compXs.slice(0,5);
+      for(let e=0;e<nEl;e++){
+        const pr=(t*1.7+e/nEl)%1;
+        const seg=Math.min(path.length-2,Math.floor(pr*(path.length-1)));
+        const sp=(pr*(path.length-1))%1;
+        const ex=path[seg]+(path[seg+1]-path[seg])*sp;
+        const ey=MEM_CY-MEM_H/2-9-Math.sin(sp*Math.PI)*7;
+        D.circ(ctx,ex,ey,3.5,'#ff8a65',.55+luzN*.4);
+      }
+      ctx.font='8px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+      ctx.fillStyle='#ff8a6555'; ctx.fillText('fluxo de elétrons (e⁻)',compXs[2],MEM_CY-MEM_H/2-20);
+    }
+
+    // H₂O splitting no PSII → O₂ e H⁺ para lúmen
+    if(luzN>.1){
+      const pp=(t*1.2)%1;
+      D.circ(ctx,compXs[0]-20+pp*15,MEM_CY-MEM_H/2-8-pp*12,3,'#4fc3f7',1-pp);
+      ctx.font='bold 9px var(--fonte)'; ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillStyle='#4fc3f777'; ctx.fillText('H₂O',compXs[0]-22,MEM_CY-MEM_H/2-22);
+      const op=(t*.9+.5)%1;
+      D.circ(ctx,compXs[0]-18+op*12,MEM_CY+MEM_H/2+5+op*14,3,'#80deea',op*.8);
+      ctx.fillStyle='#80deea77'; ctx.fillText('O₂',compXs[0]-22,MEM_CY+MEM_H/2+20);
+    }
+
+    // H⁺ acumulando no lúmen (meia-direita, entre PSII e PSI)
+    if(luzN>.1){
+      for(let i=0;i<5;i++){
+        const pp=(t*1.6+i/5)%1;
+        const px=compXs[1]+pp*(compXs[3]-compXs[1]);
+        D.circ(ctx,px,MEM_CY+MEM_H/2*(.4+pp*.3),2.5,'#fff176',.3+luzN*.6);
       }
     }
 
-    // H₂O → O₂ (PSII)
-    if (luzN > 0.1) {
-      const pp = (t*1.2) % 1;
-      D.circ(ctx, comps[0].x-30+pp*20, memY-25-pp*15, 3, '#4fc3f7', 1-pp);
-      D.texto(ctx,'H₂O', comps[0].x-35, memY-40, '#4fc3f7', 8);
-      D.circ(ctx, comps[0].x-20+pp*15, memY+20+pp*20, 3.5, '#80deea', 0.5+pp*0.4);
-      D.texto(ctx,'O₂', comps[0].x-20, memY+50, '#80deea', 8);
-      D.texto(ctx,'+ H⁺', comps[0].x+5, memY+50, '#fff176', 8);
+    // NADPH saindo do PSI para o estroma
+    if(luzN>.1){
+      const np=(t*.85+.4)%1;
+      D.circ(ctx,compXs[4]+15+np*28,MEM_CY-MEM_H/2-9-np*10,3.5,'#80cbc4',.4+np*.5);
+      ctx.font='bold 9px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillStyle='#80cbc477'; ctx.fillText('NADPH',compXs[4]+18,MEM_CY-MEM_H/2-26);
     }
 
-    // NADPH produzido (PSI)
-    if (luzN > 0.1) {
-      const np = (t*0.9+0.5) % 1;
-      D.circ(ctx, comps[4].x+20+np*25, memY-22-np*8, 4, '#80cbc4', 0.4+np*0.5);
-      D.texto(ctx,'NADPH', comps[4].x+35, memY-35, '#80cbc4', 8, true);
+    // ATP saindo da ATP-sintase para o estroma
+    if(luzN>.15){
+      const ap=(t*1.0+.2)%1;
+      D.circ(ctx,compXs[5]+ap*24,MEM_CY-MEM_H/2-6-ap*14,4,'#ce93d8',.4+ap*.5);
+      ctx.font='bold 9px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillStyle='#ce93d877'; ctx.fillText('ATP',compXs[5]+12,MEM_CY-MEM_H/2-28);
     }
 
-    // H⁺ atravessando ATP-sintase → ATP
-    if (luzN > 0.15) {
-      const ap = (t*1.1+0.3) % 1;
-      D.circ(ctx, comps[5].x, memY+18+ap*12, 2.5, '#fff176', 1-ap);
-      const ap2 = (t*0.7+0.1) % 1;
-      D.circ(ctx, comps[5].x+20+ap2*20, memY-22, 4, '#ce93d8', 0.5+ap2*0.4);
-      D.texto(ctx,'ATP', comps[5].x+35, memY-28, '#ce93d8', 8, true);
-    }
+    const CAL_H=H-CAL_Y;
+    ctx.fillStyle='#80cbc477'; ctx.font='bold 10px var(--fonte)';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('CICLO DE CALVIN — Fixação do Carbono (Estroma)',W/2,CAL_Y+11);
 
-    // ─── CICLO DE CALVIN ─────────────────────────────────────────
-    const ccy = divH + (H-divH)*0.55;
-    const ccr = Math.min((H-divH)*0.35, W*0.18);
-    const ccx = W/2;
+    // Calvin: ciclo com 5 nós bem espaçados
+    const CCX=W*.38, CCY=CAL_Y+(CAL_H-14)*.56;
+    const CCR=Math.min((CAL_H-22)*.40,W*.16);
 
-    // Seta circular do ciclo
-    ctx.strokeStyle='rgba(128,203,196,0.35)'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(ccx, ccy, ccr*0.9, 0, Math.PI*2); ctx.stroke();
+    ctx.strokeStyle='rgba(128,203,196,.22)'; ctx.lineWidth=1.5;
+    ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(CCX,CCY,CCR,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
 
-    // Setas direcionais
-    const nSetas=6;
-    for (let i=0;i<nSetas;i++) {
-      const a = (i/nSetas)*Math.PI*2 - Math.PI/2;
-      const a2 = a + Math.PI*2/nSetas * 0.85;
-      const ax1 = ccx + ccr*0.9*Math.cos(a);
-      const ay1 = ccy + ccr*0.9*Math.sin(a);
-      const ax2 = ccx + ccr*0.9*Math.cos(a2);
-      const ay2 = ccy + ccr*0.9*Math.sin(a2);
-      D.seta(ctx, ax1,ay1, ax2,ay2, 'rgba(128,203,196,0.3)', 1);
-    }
-
-    // Nós do Calvin
-    const calNodes = [
-      {a:-Math.PI*0.5, lab:'CO₂',      cor:'#90a4ae', r:14},
-      {a:-Math.PI*0.5+Math.PI*0.55, lab:'3-PGA',  cor:'#4db6ac', r:16},
-      {a:-Math.PI*0.5+Math.PI*1.10, lab:'1,3-BPGA',cor:'#26a69a', r:18},
-      {a:-Math.PI*0.5+Math.PI*1.55, lab:'G3P',    cor:'#00897b', r:16},
-      {a:-Math.PI*0.5+Math.PI*1.90, lab:'RuBP',   cor:'#80cbc4', r:18},
+    const cNodes=[
+      {a:-Math.PI*.50, lab:'CO₂\n+RuBP', cor:'#80cbc4', r:20, note:'fixação'},
+      {a:-Math.PI*.50+Math.PI*.60, lab:'3-PGA',    cor:'#4db6ac', r:18, note:'3C'},
+      {a:-Math.PI*.50+Math.PI*1.15,lab:'1,3-BPGA', cor:'#26a69a', r:18, note:'+ATP'},
+      {a:-Math.PI*.50+Math.PI*1.60,lab:'G3P',      cor:'#00897b', r:17, note:'+NADPH'},
+      {a:-Math.PI*.50+Math.PI*1.88,lab:'RuBP',     cor:'#80cbc4', r:16, note:'regenera'},
     ];
-    calNodes.forEach(n => {
-      const nx = ccx + ccr*Math.cos(n.a);
-      const ny = ccy + ccr*Math.sin(n.a);
-      D.circBorda(ctx, nx, ny, n.r, n.cor+'33', n.cor, 2);
-      D.texto(ctx, n.lab, nx, ny, '#fff', 8, true);
+
+    // Setas de transição
+    cNodes.forEach((n,i)=>{
+      const n2=cNodes[(i+1)%cNodes.length];
+      D.seta(ctx, CCX+CCR*Math.cos(n.a+.25),CCY+CCR*Math.sin(n.a+.25),
+                  CCX+CCR*Math.cos(n2.a-.25),CCY+CCR*Math.sin(n2.a-.25),'rgba(128,203,196,.3)',1.5);
     });
+    // Nós
+    cNodes.forEach(n=>{
+      const nx=CCX+CCR*Math.cos(n.a), ny=CCY+CCR*Math.sin(n.a);
+      ctx.fillStyle=n.cor+'2a'; ctx.beginPath(); ctx.arc(nx,ny,n.r,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle=n.cor+'cc'; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.font='bold 8px var(--mono)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='#e0f2f1';
+      const lines=n.lab.split('\n'); lines.forEach((l,li)=>ctx.fillText(l,nx,ny+(li-.5*(lines.length-1))*9));
+      ctx.font='7px var(--fonte)'; ctx.fillStyle=n.cor+'77'; ctx.fillText(n.note,nx,ny+n.r+7);
+    });
+    ctx.font='bold 9px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#4db6acaa'; ctx.fillText('RuBisCO',CCX,CCY);
 
-    // ATP e NADPH consumidos no Calvin
-    const atpAnim = (t*1.2) % 1;
-    D.circ(ctx, ccx+ccr*0.3+atpAnim*25, ccy-ccr*0.5-atpAnim*10, 4, '#ce93d8', 0.4+atpAnim*0.4);
-    D.texto(ctx,'ATP',ccx+ccr*0.3+15,ccy-ccr*0.65,'#ce93d8',8);
-    const nadphAnim = (t*0.9+0.3) % 1;
-    D.circ(ctx, ccx-ccr*0.3+nadphAnim*20, ccy-ccr*0.4-nadphAnim*12, 4, '#80cbc4', 0.3+nadphAnim*0.5);
-    D.texto(ctx,'NADPH',ccx-ccr*0.5,ccy-ccr*0.6,'#80cbc4',8);
+    // CO₂ entrando
+    const n0=cNodes[0], n0x=CCX+CCR*Math.cos(n0.a), n0y=CCY+CCR*Math.sin(n0.a);
+    if(E.co2>0){ const cp=(t*.65)%1; D.circ(ctx,n0x-30+cp*28,n0y-4,4,'#90a4ae',.5+cp*.4); }
+    ctx.font='9px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillStyle='#90a4ae88'; ctx.fillText(`CO₂ — ${E.co2} ppm`,n0x,n0y-n0.r-10);
 
-    // G3P → Glicose (saindo do ciclo)
-    if (E.taxaPS > 5) {
-      const gp = (t*0.7) % 1;
-      const g3px = ccx + ccr*Math.cos(-Math.PI*0.5+Math.PI*1.55);
-      const g3py = ccy + ccr*Math.sin(-Math.PI*0.5+Math.PI*1.55);
-      D.circ(ctx, g3px-40+gp*-40, g3py+gp*20, 5, '#ffb300', 0.4+gp*0.4);
-      D.texto(ctx,'→ Glicose', g3px-90, g3py+30, '#ffb300', 9, true);
-    }
+    // ATP + NADPH consumidos
+    if(luzN>.1){ const n2=cNodes[2],n2x=CCX+CCR*Math.cos(n2.a),n2y=CCY+CCR*Math.sin(n2.a);
+      const ap=(t*.9)%1; D.circ(ctx,n2x-22+ap*20,n2y-ap*9,3.5,'#ce93d8',.4+ap*.4);
+      ctx.font='8px var(--fonte)'; ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillStyle='#ce93d877'; ctx.fillText('ATP+NADPH',n2x-8,n2y-18); }
 
-    // RuBisCO (enzima)
-    D.texto(ctx,'RuBisCO', ccx, ccy, '#4db6acaa', 10, true);
+    // G3P → Glicose saindo
+    if(E.taxaPS>5){ const n3=cNodes[3],n3x=CCX+CCR*Math.cos(n3.a),n3y=CCY+CCR*Math.sin(n3.a);
+      const gp=(t*.5)%1; D.circ(ctx,n3x+gp*42,n3y+gp*14,4.5,'#ffb300',.45+gp*.4);
+      ctx.font='bold 9px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillStyle='#ffb30099'; ctx.fillText('→ Glicose',n3x+10,n3y+24); }
 
-    // Contadores de moléculas
-    const box_x=W-180, box_y=divH+14;
-    ctx.fillStyle='rgba(11,26,46,.7)'; ctx.beginPath(); ctx.roundRect(box_x,box_y,168,100,8); ctx.fill();
-    D.texto(ctx,'Produção por ciclo',box_x+84,box_y+12,'#dce8f5aa',9,true);
-    [
-      [`ATP gerado: ${(E.atpProd).toFixed(1)}`, '#ce93d8'],
-      [`NADPH gerado: ${(E.nadphProd).toFixed(1)}`, '#80cbc4'],
-      [`O₂ liberado: ${(E.o2Prod).toFixed(2)}`, '#80deea'],
-      [`Glicose: ${(E.glucProd).toFixed(2)}`, '#ffb300'],
-    ].forEach(([txt,cor],i) => D.texto(ctx,txt,box_x+84,box_y+28+i*17,cor,9,true));
+    // ── Painel de produção (direita do Calvin) ───────────────────
+    const PX=W*.65, PY=CAL_Y+8, PW=W-PX-PAD, PH=CAL_H-18;
+    ctx.fillStyle='rgba(8,18,40,.88)'; ctx.beginPath(); ctx.roundRect(PX,PY,PW,PH,8); ctx.fill();
+    ctx.strokeStyle='#1a3557'; ctx.lineWidth=1; ctx.stroke();
+
+    ctx.font='bold 9px var(--fonte)'; ctx.textAlign='center'; ctx.textBaseline='top';
+    ctx.fillStyle='#4db6acaa'; ctx.fillText('Produção Atual',PX+PW/2,PY+7);
+
+    const prodData=[
+      {label:'ATP',    val:E.atpProd,   cor:'#ce93d8', max:20},
+      {label:'NADPH',  val:E.nadphProd, cor:'#80cbc4', max:14},
+      {label:'O₂',     val:E.o2Prod,    cor:'#80deea', max:6 },
+      {label:'Glicose',val:E.glucProd,  cor:'#ffb300', max:4 },
+    ];
+    const rowH=(PH-26)/prodData.length;
+    prodData.forEach((p,i)=>{
+      const ry=PY+22+i*rowH;
+      ctx.font='bold 9px var(--fonte)'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      ctx.fillStyle=p.cor; ctx.fillText(p.label,PX+8,ry+rowH/2);
+      const bW=PW-50;
+      ctx.fillStyle='#0f1e38'; ctx.fillRect(PX+50,ry+4,bW,rowH-8);
+      ctx.fillStyle=p.cor; ctx.fillRect(PX+50,ry+4,bW*Math.min(1,p.val/p.max),rowH-8);
+      ctx.font='8px var(--mono)'; ctx.fillStyle=p.cor+'99'; ctx.textAlign='right';
+      ctx.fillText(p.val.toFixed(2),PX+PW-4,ry+rowH/2);
+    });
   }
 };
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  RENDERIZADOR PRINCIPAL                                      ║
-// ╚══════════════════════════════════════════════════════════════╝
 const niveis = [NivelAmbiente, NivelPlanta, NivelFolha, NivelCelula, NivelCloroplasto, NivelMolecular];
 
 const cvs = document.getElementById('cvs');
@@ -1900,124 +1922,7 @@ function loop(ts) {
   }
 }
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  CONCEPÇÕES ALTERNATIVAS                                     ║
-// ╚══════════════════════════════════════════════════════════════╝
-const CONCEPCOES = [
-  {
-    id:'C01', txt:'Plantas obtêm alimento do solo',
-    correcao:'As plantas FABRICAM seu próprio alimento via fotossíntese (CO₂ + H₂O + luz → glicose). O solo fornece apenas minerais.',
-    testar: () => E.biomassa > 20 && E.taxaPS > 10,
-  },
-  {
-    id:'C02', txt:'Água e sais minerais são o alimento da planta',
-    correcao:'Água e minerais são matérias-primas, não alimento. O alimento (glicose) é sintetizado na fotossíntese.',
-    testar: () => E.taxaPS > 15,
-  },
-  {
-    id:'C03', txt:'Fotossíntese ocorre apenas nas folhas',
-    correcao:'Ocorre em qualquer célula verde com cloroplastos: caules, vagens, frutos verdes etc.',
-    testar: () => E.nivel === 1 || E.nivel === 3,
-  },
-  {
-    id:'C04', txt:'Fotossíntese é apenas troca de gases',
-    correcao:'A troca de gases (CO₂ entra, O₂ sai) é consequência. O processo central é a SÍNTESE DE GLICOSE com energia luminosa.',
-    testar: () => E.taxaPS > 20,
-  },
-  {
-    id:'C05', txt:'Fotossíntese é a respiração da planta',
-    correcao:'São processos OPOSTOS: PS consome CO₂ e produz O₂; respiração consome O₂ e produz CO₂. Ambos ocorrem simultaneamente!',
-    testar: () => E.taxaPS > 5 && E.taxaResp > 3,
-  },
-  {
-    id:'C06', txt:'Plantas não respiram',
-    correcao:'Plantas respiram 24 horas por dia, igual a animais, usando mitocôndrias. A respiração nunca para!',
-    testar: () => E.taxaResp > 0.5,
-  },
-  {
-    id:'C07', txt:'Plantas respiram apenas à noite',
-    correcao:'A respiração é contínua (dia e noite). Basta ver: Respiração = ' + E.taxaResp.toFixed(1) + '% mesmo com luz acesa.',
-    testar: () => E.luz > 50 && E.taxaResp > 3,
-  },
-  {
-    id:'C08', txt:'Respiração é o inverso da fotossíntese',
-    correcao:'Embora tenham equações "espelho", os mecanismos bioquímicos são completamente diferentes (locais, vias, enzimas).',
-    testar: () => E.nivel >= 3,
-  },
-  {
-    id:'C09', txt:'Energia luminosa é perdida ao ser usada',
-    correcao:'A energia luminosa é CONVERTIDA em energia química (ATP, NADPH → glicose). Não é perdida, é transformada!',
-    testar: () => E.atpProd > 0.5,
-  },
-  {
-    id:'C10', txt:'Massa da planta vem do solo',
-    correcao:'Mais de 90% da biomassa vem do CO₂! O carbono da glicose (C₆H₁₂O₆) vem do ar, não do solo.',
-    testar: () => E.biomassa > 30 && E.taxaPS > 15,
-  },
-  {
-    id:'C11', txt:'Açúcar não é produzido pela planta',
-    correcao:'A planta é literalmente uma fábrica de açúcar. O G3P do Ciclo de Calvin é o precursor da glicose e outros carboidratos.',
-    testar: () => E.glucProd > 0.1,
-  },
-  {
-    id:'C12', txt:'Plantas não produzem energia química',
-    correcao:'Plantas produzem ATP e NADPH na fase luminosa, e convertem energia em ligações químicas da glicose.',
-    testar: () => E.atpProd > 0.3,
-  },
-  {
-    id:'C13', txt:'CO₂ não contribui para a massa da planta',
-    correcao:'O carbono do CO₂ é o ESQUELETO carbônico de toda a matéria orgânica da planta. Veja: sem CO₂ a biomassa para de crescer.',
-    testar: () => E.co2 === 0 || (E.co2 > 100 && E.biomassa > 20),
-  },
-  {
-    id:'C14', txt:'Luz serve apenas para aquecer',
-    correcao:'A luz fornece ENERGIA eletromagnética que excita elétrons na clorofila, iniciando a cadeia de transporte de elétrons.',
-    testar: () => E.nivel >= 4 && E.luz > 20,
-  },
-];
 
-const Concepcoes = {
-  init() {
-    const lista = document.getElementById('lista-concepcoes');
-    CONCEPCOES.forEach(c => {
-      const el = document.createElement('div');
-      el.className='concepcao';
-      el.id='conc-'+c.id;
-      el.innerHTML=`<span class="c-ico">!</span>${c.txt}`;
-      lista.appendChild(el);
-    });
-  },
-  verificar() {
-    CONCEPCOES.forEach(c => {
-      if (c.testar() && !E.corrigidas.has(c.id)) {
-        E.corrigidas.add(c.id);
-        const el = document.getElementById('conc-'+c.id);
-        if (el) {
-          el.className='concepcao ok';
-          el.innerHTML=`<span class="c-ico">✓</span>${c.txt}`;
-          el.title=c.correcao;
-          // Flash
-          el.style.boxShadow='0 0 12px rgba(102,187,106,.4)';
-          setTimeout(()=>el.style.boxShadow='',2000);
-        }
-      }
-    });
-  },
-  mostrarInfo(id) {
-    const c = CONCEPCOES.find(x=>x.id===id);
-    if (!c) return;
-    const el = document.getElementById('info-concepcao');
-    document.getElementById('ic-tit').textContent = '⚠ Concepção Alternativa '+c.id;
-    document.getElementById('ic-txt').textContent = c.txt;
-    document.getElementById('ic-corr').textContent = '✓ '+c.correcao;
-    el.classList.add('vis');
-    setTimeout(()=>el.classList.remove('vis'), 6000);
-  }
-};
-
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  MINI-GRÁFICO                                                ║
-// ╚══════════════════════════════════════════════════════════════╝
 const Graficos = {
   canvas: null, ctx: null,
   init() {
@@ -2081,9 +1986,6 @@ const BADGE_TEXTOS = [
   'Nível Molecular',
 ];
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  GERENCIADOR DE UI                                           ║
-// ╚══════════════════════════════════════════════════════════════╝
 const UI = {
   setNivel(n) {
     E.nivel = Math.max(0, Math.min(5, n));
@@ -2114,30 +2016,25 @@ const UI = {
     E.luz=v;
     document.getElementById('v-luz').textContent=v+'%';
     document.getElementById('sl-luz').value=v;
-    if(v===0) this.mostrarAlerta('⚫ Sem luz: fotossíntese ZERO.\nMas veja: respiração continua! Plantas respiram dia e noite.');
   },
   setCO2(v) {
     E.co2=v;
     document.getElementById('v-co2').textContent=v+' ppm';
     document.getElementById('sl-co2').value=v;
-    if(v===0) this.mostrarAlerta('🚫 Sem CO₂: mesmo com luz, PS = 0.\nO carbono do CO₂ vira a MASSA da planta!');
   },
   setH2O(v) {
     E.h2o=v;
     document.getElementById('v-h2o').textContent=v+'%';
     document.getElementById('sl-h2o').value=v;
-    if(v<10) this.mostrarAlerta('🏜️ Solo seco: estômatos FECHAM\npara evitar desidratação. PS cai!');
   },
   setTemp(v) {
     E.temp=v;
     document.getElementById('v-temp').textContent=v+'°C';
     document.getElementById('sl-temp').value=v;
-    if(v>38) this.mostrarAlerta('🌡️ Temperatura alta: enzimas desnaturando.\nTaxa ótima = 25°C (curva gaussiana).');
   },
   setStom(v) {
     E.stom=v;
     document.getElementById('sw-stom').checked=v;
-    if(!v) this.mostrarAlerta('🔒 Estômatos fechados: CO₂ não entra!\nPS cai ~95%. H₂O não sai (menos transpiração).');
   },
   setRaiz(v)   { E.raiz=v; document.getElementById('sw-raiz').checked=v; },
   setFloema(v) { E.floema=v; document.getElementById('sw-floema').checked=v; },
@@ -2149,7 +2046,6 @@ const UI = {
     });
     const idMap={branca:'branca',azul:'azul',vermelho:'verm',verde:'verde'};
     document.getElementById('esp-'+idMap[e])?.classList.add('on');
-    if(e==='verde') this.mostrarAlerta('🟢 Luz verde é REFLETIDA pelas folhas.\nA clorofila absorve principalmente azul e vermelho!');
   },
 
   // Experimentos
@@ -2157,9 +2053,8 @@ const UI = {
   expSemCO2()  { this.setCO2(0); document.getElementById('exp-sem-co2').classList.add('on'); },
   expSemAgua() { this.setH2O(0); document.getElementById('exp-sem-agua').classList.add('on'); },
   expFechStom(){ this.setStom(false); document.getElementById('exp-fech-stom').classList.add('on'); },
-  expNoite()   {
+  expNoite() {
     this.setLuz(0); this.setTemp(18);
-    this.mostrarAlerta('🌙 Simulando noite:\n• Fotossíntese = 0 (sem luz)\n• Respiração CONTINUA (C07 corrigida!)\n• Biomassa cai levemente');
   },
 
   reset() {
@@ -2204,19 +2099,8 @@ const UI = {
     const liqEl=document.getElementById('d-liq');
     if(liqEl) liqEl.style.color = E.taxaLiq>0?'#66bb6a':E.taxaLiq<0?'#ff7043':'#dce8f5';
   },
-
-  mostrarAlerta(msg) {
-    const el=document.getElementById('alerta-popup');
-    el.textContent=msg;
-    el.classList.add('vis');
-    clearTimeout(this._alertTimer);
-    this._alertTimer=setTimeout(()=>el.classList.remove('vis'), 4000);
-  },
 };
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  INICIALIZAÇÃO                                               ║
-// ╚══════════════════════════════════════════════════════════════╝
 window.addEventListener('DOMContentLoaded', () => {
   redimensionar();
   window.addEventListener('resize', redimensionar);
@@ -2226,23 +2110,12 @@ window.addEventListener('DOMContentLoaded', () => {
     t.addEventListener('click',()=>UI.setNivel(+t.dataset.n));
   });
 
-  Concepcoes.init();
   Graficos.init();
   UI.setNivel(0);
   UI.atualizarDados();
 
-  // Mensagem inicial
-  setTimeout(()=>{
-    UI.mostrarAlerta('🌿 Bem-vindo ao PhytoLab!\n\nExplore os 6 níveis de escala e\nmanipule as variáveis para descobrir\ncomo a fotossíntese realmente funciona.');
-  }, 800);
-
   // Inicia loop
   requestAnimationFrame(loop);
-
-  // Corrigi C07 logo no início (respiração está ativa)
-  setTimeout(()=>{
-    if(!E.corrigidas.has('C06')) Concepcoes.verificar();
-  }, 2000);
 });
 
 // Expõe U como alias de UI para os handlers inline do HTML
